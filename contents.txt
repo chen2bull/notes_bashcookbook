@@ -1,0 +1,19 @@
+ch01 bash入门基础
+ch02 标准输出
+ch03 标准输入
+ch04 执行命令
+ch05 变量
+ch06 运算和控制流
+ch07 工具1 grep 和awk
+ch08 工具2 sort cut
+ch09 find，xargs，locate
+ch10 nohup,配置文件,函数,信号,alias
+ch11 时间和日期的格式化,和cron的使用
+ch12 Scripts的例子s
+ch13 参数解析
+ch14 写安全的Shell脚本
+ch15 杂项（被称为Advanced Scripting）
+ch16 bash的配置
+ch17 日常管理工作
+ch18 高效使用bash
+ch19 常见错误和注意点

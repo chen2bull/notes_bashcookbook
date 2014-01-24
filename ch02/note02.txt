@@ -1,0 +1,77 @@
+----------------------------------------------------------
+2.1 输出到终端
+$echo Please wait
+Please wait
+$echo this     was     very    widely   spaced
+this was very widely spaced
+$echo "this     was     very    widely   spaced"
+this     was     very    widely   spaced
+$echo -n somethings
+somethings$
+----------------------------------------------------------
+2.3 格式化输出
+$value=28
+$printf "%s = %d\n" Lines $value
+Lines = 28
+$printf "%-10.10s=%4.2f\n" 'GigaHerz' 1.92735
+GigaHerz  =1.93
+#printf命令和C语言中的printf函数类似
+----------------------------------------------------------
+2.8 重定向到不同文件
+$myprogram > msg_stdout.txt 2> meg_stderr.txt
+----------------------------------------------------------
+2.9 重定向到相同文件
+$myprogram >& outfile.txt
+或
+$myprogram &> outfile.txt
+或
+$myprogram > outfile.txt 2>&1
+----------------------------------------------------------
+2.10 将重定向内容写到文件末端
+ls >> /tmp/ls.out
+----------------------------------------------------------
+2.11 使用文件的开头或结尾
+$head -n 5 <filename>
+开头5行
+$tail -n 5 <filename>
+结尾5行
+$tail -n +5 <filename>
+从第五行（包括）到文件末尾
+----------------------------------------------------------
+2.13 丢弃输出
+$find / -name myfile -print 2> /dev/null
+将find命令的错误输出流重定向到/dev/null（即丢弃）
+----------------------------------------------------------
+2.14 重定向多个命令的输出
+$(pwd;ls;cd ..;pwd;ls) > /tmp/tempFile.txt
+----------------------------------------------------------
+2.15 用管道链接两个命令的输入和输出
+$cat note02.txt | sort
+或者
+$sort < note02.txt
+----------------------------------------------------------
+2.16 tee命令的使用
+$cat my*| tr 'a-z' 'A-Z' | uniq | wc
+当想看到上面的命令中uniq和wc之间被重定向的内容，用以下的命令
+$cat my*| tr 'a-z' 'A-Z' | uniq | tee file1.txt |wc
+----------------------------------------------------------
+2.17 用一个程序的输出作为另一个程序的参数
+$rm $(find . -name '*.class')
+----------------------------------------------------------
+*2.18 复合从定向的使用（不推荐使用）
+$divert 3>three.txt 4> fout.txt 5> five.txt 
+将文件描述符为3～5的文件重定向到不同的地方
+----------------------------------------------------------
+*2.20 交换STDERR和STDOUT
+./myscript 3>&1 1>stdout.logfile 2>&3- | tee -a stderr.logfile
+----------------------------------------------------------
+2.21 防止既有的文件被重定向修改
+$set -o noclobber
+防止既有的文件被重定向修改
+$set +o nuclobber
+取消以上的设置
+$echo something >| my.file
+强制将输出重定向到文件my.file
+(即使设置了以上内容且my.file已经存在，亦会覆盖my.file)
+----------------------------------------------------------
+

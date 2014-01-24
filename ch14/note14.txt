@@ -1,0 +1,89 @@
+------------------------------------------------------------------------
+14.1 避免安全问题
+a.对所有输入进行合法性验证(包括配置文件和交互式输入).
+特别地,永远不要eval未经确认的输入.
+b.使用临时文件(最好在临时目录中),见14.10
+c.使用可靠的外部命令.
+------------------------------------------------------------------------
+14.2 设置一个安全的$PATH
+Set $PATH to a known good state at the beginning of every script:
+# Set a sane/secure path
+PATH='/usr/local/bin:/bin:/usr/bin'
+# It's almost certainly already marked for export, but make sure
+export PATH
+Or use the getconf utility to get a path guaranteed by POSIX to 
+find all of the standard utilities:
+export PATH=$(getconf PATH)
+------------------------------------------------------------------------
+14.3 清除所有的Aliases
+# Clear all aliases.  Important: leading \ inhibits alias expansion 
+\unalias -a
+------------------------------------------------------------------------
+14.4 用hash -r来清除所有的命令hash
+(命令hash机制有bash自动完成,目的是提高bash的速度)
+If an attacker can trick root or even another user into running a command,
+they will be able to gain access to data or privileges they shouldn’t have. 
+------------------------------------------------------------------------
+14.5 用ulimit修改shell资源限制
+ulimit -H -c 0 或 ulimit -H -c 0 --
+#使用硬资源限制,并将core file的大小设置为0,这样就可以
+Prevent your script from dumping core in the case of an unrecoverable error,
+since core dumps may contain sensitive data from memory such as passwords.
+------------------------------------------------------------------------
+14.6 Setting a Secure $IFS
+# Set a sane/secure IFS (note this is bash & ksh93 syntax only--not portable!)
+IFS=$' \t\n'
+------------------------------------------------------------------------
+14.7 Setting a Secure umask
+使用built-in 的umask(在每个脚本开头) 设置一个安全的状态
+# umask的值是:从新创建的文件中"拿掉"的权限
+# 比如umask值设为002,那新创建的文件权限就为0775
+UMASK=002
+umask $UMASK
+------------------------------------------------------------------------
+14.8 Finding World-Writable Directories in Your $PATH
+chkpath.1.sh
+chkpath.2.sh
+------------------------------------------------------------------------
+14.9 不要将当前目录添加到$PATH
+root尤其不能这样做.
+If you absolutely must do this, make sure . comes last.
+------------------------------------------------------------------------
+14.10 创建安全的临时文件(保证临时文件是存在的)
+make_temp.sh
+清除临时文件
+clean_temp.sh
+------------------------------------------------------------------------
+14.11 对输入进行合法性验证
+下面的例子用case语句验证输入的合法性
+validate_using_case.sh
+------------------------------------------------------------------------
+14.12 合理地设置权限
+谨慎地使用chmod -R 0644 some_directory
+可以参考以下的命令
+$find some_directory -type f | xargs chmod 0644	# File perms
+$ find some_directory -type d | xargs chmod 0755 # File perms
+------------------------------------------------------------------------
+14.13 在命令中不要显式地留下密码
+./my_app -u user -p password &
+------------------------------------------------------------------------
+14.14 setuid和setgid脚本有严重的安全漏洞
+庆幸的是Linux下,setuid和setgid权限不能加给脚本文件
+------------------------------------------------------------------------
+14.15 避免使用shared accounts
+------------------------------------------------------------------------
+14.16 不得不使用不信任的程序或脚本时,先chroot
+------------------------------------------------------------------------
+14.17 在不需要root密码的情况下,得到root权限
+由root编辑/etc/sudoers文件
+------------------------------------------------------------------------
+14.18 Avoid hardcode a password in a script(不得不需要密码的情况下)
+You can use sudo with the NOPASSWD option to 
+avoid having to hardcode a password anywhere. 
+------------------------------------------------------------------------
+14.19 不需要密码的情况下使用SSH
+详见《鸟哥的Linux私房菜 服务器架设篇（第二版）》 P300～P302
+------------------------------------------------------------------------
+14.20 安全的shell脚本的模板（综合以上一部分知识）
+security_template.sh
+------------------------------------------------------------------------

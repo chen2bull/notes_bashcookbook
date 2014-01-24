@@ -1,0 +1,4 @@
+Header1		Header2                  Header3
+Rec1_Field1	Rec1_Field2		 Rec1_Field3
+Rec2_Field1		Rec2_Field2	 Rec2_Field3
+Rec3_Field1	Rec3_Field2		Rec3_Field3

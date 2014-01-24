@@ -1,0 +1,105 @@
+================ch19常见错误============================================
+------------------------------------------------------------------------
+19.1 忘记设置执行权限
+chmod a+x myscript.sh或者直接bash myscript.sh
+------------------------------------------------------------------------
+19.2 执行脚本文件时，提示""No such file or director"
+很有可能是换行符跟当前系统不匹配,见8.11
+也有可能是bash文件开头没有#!/usr/bin/env bash
+------------------------------------------------------------------------
+19.3 忘记当前目录不再$PATH中
+$myscripts.sh执行出错
+$./myscripts.sh才对
+------------------------------------------------------------------------
+19.4 用test作为脚本的名字（和bash中的test冲突了）
+------------------------------------------------------------------------
+19.5 尝试修改已经exported的变量
+first.sh
+second.sh
+------------------------------------------------------------------------
+19.6 忘记使用双引号，
+#!/bin/bash -
+# common goof:
+# X=$Y $Z
+# isn't the same as
+# X="$Y $Z"
+#
+OPT1=-l
+OPT2=-h
+#这样不能正常执行ls -l -h .
+#ALLOPT=$OPT1 $OPT2
+
+#这样才能正常执行
+ALLOPT="$OPT1 $OPT2"
+ls $ALLOPT .
+------------------------------------------------------------------------
+19.7 忘记模式匹配时产生的序列是按字母顺序排列的
+$ mv x.[ba]
+以为会执行
+$ mv x.b x.a
+但实际执行的是
+$ mv x.a x.b
+------------------------------------------------------------------------
+19.8 Forgetting That Pipelines Make Subshells
+You have a script that works just fine, reading input in a while loop:
+COUNT=0
+while read PREFIX GUTS
+do
+# ...
+if [[ $PREFIX == "abc" ]]
+then
+let COUNT++
+fi
+# ...
+done
+echo $COUNT
+
+and then you change it to read from a file:
+cat $1 | while read PREFIX GUTS
+do
+# ...
+only now it no longer works... $COUNT keeps coming out as zero.
+
+Solution：
+COUNT=0
+while read PREFIX GUTS
+do
+# ...
+done < $1
+echo $COUNT
+------------------------------------------------------------------------
+19.9 不要使用/在变量的开头 如 /$files_to_delete
+永远永远不能这样执行 rm -rf /$files_to_delete 永远不要
+·[ "$files_to_delete" ] && rm -rf $files_to_delete
+------------------------------------------------------------------------
+19.10 没有给printf的参数加引号
+oddscript.sh
+------------------------------------------------------------------------
+19.11 使用bash -n 来测试bash的语法！！！
+------------------------------------------------------------------------
+19.12 在bash的开头加入set -x，然后执行脚本就可Debug bash脚本了
+注意还可以修改PS4来改变Debug时的显示
+（比如$ export PS4='+xtrace $LINENO:'）
+buggy.sh
+As of bash 3.0 there are a number of new variables to better support
+debugging:$BASH_ARGC, $BASH_ARGV, $BASH_SOURCE, $BASH_LINENO, 
+$BASH_SUBSHELL, $BASH_EXECUTION_STRING, and $BASH_COMMAND. 
+This is in addition to existing bash variables
+like $LINENO and the array variable $FUNCNAME.
+------------------------------------------------------------------------
+19.13 不要混淆匹配的模式和正则表达式
+Shell pattern matching is performed by:
+• Filename globbing (pathname expansion)
+• == and != operators for [[
+• case statements
+• $GLOBIGNORE handling
+• $HISTIGNORE handling
+• ${parameter#[#]word}
+• ${parameter%[%]word}
+• ${parameter/pattern/string}
+• Several bindable readline commands (glob-expand-word, glob-complete-word,
+etc.)
+
+写bash脚本是，正则表达式用在 grep、awk、sed等工具中使用。
+bash本身只在 =~ 中使用
+------------------------------------------------------------------------

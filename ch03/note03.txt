@@ -1,0 +1,38 @@
+-------------------------------------------
+3.1 从文件获得输入
+$wc < my.file
+-------------------------------------------
+3.2 Here document:在Script文件中保存要输入的数据
+here_document01.sh
+-------------------------------------------
+3.3 防止here document中的 “$1”解析成命令行参数
+here_document02.sh
+-------------------------------------------
+3.4 在here document中,使用缩进
+here_document03.sh
+-------------------------------------------
+3.5 获得用户的输入
+$read
+将读的值存到变量REPLY中
+$read -p "answer me this:" ANSWER
+提示“answer me this:”，并将输入的值存到变量ANSWER中
+$read PRE MID POST
+依次为PRE MID POST赋值
+如果输入“a b c d”,则PRE=a MID=b POST=“c d”
+如果输入“a b c”,则PRE=a MID=b POST=c
+如果输入“a b”,则PRE=a MID=b POST为空
+-------------------------------------------
+3.6 获得是或者否
+func_choose.sh		在参数中输入是或否时该执行的变量
+func_choose.1.sh	要求输入是或否，将结果值存到 $CHOICE
+func_choose.2.sh	确认用户的输入
+func_choose.3.sh 	输入最喜欢的颜色，或则直接敲回车（结果为空）
+-------------------------------------------
+3.7 在多个选项中选择一项
+select_dir.sh		select命令的使用
+（修改PS3并select $value in $list;do <一些处理> done ）
+-------------------------------------------
+3.8 输入密码（虽可行，但不太安全的做法，密码记录到全局变量中）
+read -s -p "Please input the password:" PASSWD
+printf "%b" "\n" (负责换行，%b认为“\n”是换行符)
+-------------------------------------------

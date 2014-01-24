@@ -1,0 +1,37 @@
+------------------------------------------------------------------------
+13.1 解析命令行参数的例子
+getopts_example.sh
+------------------------------------------------------------------------
+13.2 将输出保存在数组中哦
+parseViaArray.sh
+------------------------------------------------------------------------
+13.3 用函数解析输出
+parseViaFunc.sh
+------------------------------------------------------------------------
+13.4 一个一个地处理字符
+onebyone.sh
+------------------------------------------------------------------------
+13.5 去除一行中前后的空白字符
+shopt -s extglob
+while IFS= read -r line; do
+      echo "None: ~~$line~~"
+      echo "Ld: ~~${line##+([[:space:]])}~~"
+      echo "Tr: ~~${line%%+([[:space:]])}~~"
+      line="${line##+([[:space:]])}"
+      line="${line%%+([[:space:]])}"
+      echo "All: ~~$line~~"
+done < whitespace
+------------------------------------------------------------------------
+13.5 将多个空格改成一个TAB
+$ cat data_file
+Header1        Header2		Header3
+Rec1_Field1    Rec1_Field2      Rec1_Field3
+Rec2_Field1  Rec2_Field2      Rec2_Field3
+Rec3_Field1     Rec3_Field2      Rec3_Field3
+
+$ cat data_file | tr -s ' ' '\t'
+Header1 ➝ Header2 ➝ Header3
+Rec1_Field1 ➝ Rec1_Field2 ➝ Rec1_Field3
+Rec2_Field1 ➝ Rec2_Field2 ➝ Rec2_Field3
+Rec3_Field1 ➝ Rec3_Field2 ➝ Rec3_Field3
+------------------------------------------------------------------------

@@ -1,0 +1,310 @@
+------------------------------------------------------------------------
+17.1 重命名很多文件
+#将文件后缀名从bad改成bash（注意用的是%号）
+#注意文件名等参数必须要用双引号围住
+for FN in *.bad
+do
+mv "${FN}" "${FN%bad}bash"
+done
+------------------------------------------------------------------------
+17.2 info bash | less（用emacs-like编辑器打开文档）
+------------------------------------------------------------------------
+17.3 解压文件
+unzip '*.zip'
+for x in /path/to/date*/name/*.zip; do unzip "$x"; done
+或者
+for x in $(ls /path/to/date*/name/*.zip 2>/dev/null); do unzip $x; done
+------------------------------------------------------------------------
+17.4~17.7 用screen来共享一个bash的session（screen是一个GNU软件）
+------------------------------------------------------------------------
+17.8 获取文件的元数据
+archive_meta-data.sh
+注意-o是OR的意思
+The (-path /foo -o -path ...) -prune part removes various 
+directories you probably don’t want to bother wit.
+------------------------------------------------------------------------
+17.9 使用diff和patch命令
+用以下的命令创建一个补丁
+diff -u original_file modified_file > your_patch.patch
+(推荐使用diff的-u选项,不推荐使用diff的-c选项)
+用以下命令应用一个补丁
+cd /path/to/files/
+patch -Np1 < your_patch
+(-N防止补丁被多次应用或撤销应用,-p1使可以在不同的文件夹之间创建和应用补丁)
+------------------------------------------------------------------------
+17.10 找出两个文件中有多少不一样的地方
+$ diff -u original_file modified_file | grep -c "^@@"
+------------------------------------------------------------------------
+17.11 处理奇葩式的文件名(如:--help或this is a *crazy* file name! )
+$ mv -- --help my_help.txt #在第一个参数前面加入--,使命令不被看作打开帮助
+$ mv this\ is\ a\ \*crazy\*\ file\ name\! this_is_a_better_name
+------------------------------------------------------------------------
+17.12 在不改变inode的情况下改变文件的内容
+# 使用ed在文件开关处加入两行文本的命令
+$ printf "%b" '1\ni\nHeader Line1\nHeader Line2\n.\nw\nq\n' | ed -s data_file
+# ed工具可以使用脚本,下面是一个简单的ed脚本
+$ cat ed_script
+1
+i
+Header Line1
+Header Line2
+.
+w
+q
+
+#应用脚本的方法很简单
+$ ed -s data_file < ed_script
+1 foo
+$ cat data_file
+Header Line1
+Header Line2
+1 foo
+2 bar
+3 baz
+------------------------------------------------------------------------
+17.13 使用sudo执行多条命令
+#下面的方法是不对的,只有command1是以root权限执行的,其它都不是
+sudo 'command1 && command2 || command3'
+#下面的方法是对的,可以执行多条命令
+sudo bash -c 'command1 && command2 || command3'
+sudo -l 和以看到本用户拥有那些权限
+------------------------------------------------------------------------
+17.14 从两个文件中找到一文件的某些(不在另一个文件中的)行
+comm,diff,sort和uniq都可以用(注意grep不适合做这类工作,grep不是整行匹配的)
+$ cat left		#第一个示例文件left
+record_01
+record_02.left only
+record_03
+record_05.differ
+record_06
+record_07
+record_08
+record_09
+record_10
+
+$ cat right		#第二个示例文件right
+record_01
+record_02
+record_04
+record_05
+record_06.differ
+record_07
+record_08
+record_09.right only
+record_10
+
+# 只输出在left中存在的行
+$ comm -23 left right
+record_02.left only
+record_03
+record_05.differ
+record_06
+record_09
+
+# 只输出在right中存在的行
+$ comm -13 left right
+record_02
+record_04
+record_05
+record_06.differ
+record_09.right only
+
+# 只输出在两个文件中存在的行
+$ comm -12 left right
+record_01
+record_07
+record_08
+record_10
+
+#比较两个文件的不同(有些系统使用sdiff代替diff -y)
+$ diff -y -W 60 left right
+record_01			record_01
+record_02.left only	|	record_02
+record_03      		|	record_04
+record_05.differ	|	record_05
+record_06		|	record_06.differ
+record_07			record_07
+record_08			record_08
+record_09		|	record_09.right only
+record_10			record_10
+
+#只显示两个文件不同的地方
+$ diff -y -W 60 --suppress-common-lines left right
+record_02.left only	| record_02
+record_03      		| record_04
+record_05.differ	| record_05
+record_06		| record_06.differ
+record_09		| record_09.right only
+
+#将两个文件的行排序并只打印不同的行
+$ sort right left | uniq -u
+record_02
+record_02.left only
+record_03
+record_04
+record_05
+record_05.differ
+record_06
+record_06.differ
+record_09
+record_09.right only
+
+#将两个文件相同的行输出来
+$ sort right left | uniq -u
+record_02
+record_02.left only
+record_03
+record_04
+record_05
+record_05.differ
+record_06
+record_06.differ
+record_09
+record_09.right only
+------------------------------------------------------------------------
+17.15 保存N个文件名s或目录名s
+func_shift_by.sh
+用法如下
+$ source shift_by.sh
+$ ls ?
+1 2 3 4 5 6 7 8 9
+$ shift_by 3 $(ls ?)
+4 5 6 7 8 9
+$ shift_by 5 $(ls ?)
+6 7 8 9
+$ shift_by 5 $(ls -r ?)
+4 3 2 1
+$ shift_by 7 $(ls ?)
+8 9
+$ shift_by 9 $(ls ?)
+# Keep only the last 5 objects
+$ echo "rm -rf $(shift_by 5 $(ls ?))"
+rm -rf 6 7 8 9
+# In production we'd test this first!
+$ rm -rf $(shift_by 5 $(ls ?))
+See discussion.
+$ ls ?
+1 2 3 4 5
+------------------------------------------------------------------------
+17.16 grep ps的输出,同时屏蔽掉grep本身的进程
+ps aux | grep 'ssh' | grep -v grep
+------------------------------------------------------------------------
+17.17 找出进程是否正在运行(ps命令在不同的OS下差别太大)
+is_process_running.sh
+# Linux
+$ ps -wwo pid,args -p 1394 | grep 'bin/sshd'
+1394 /usr/sbin/sshd
+------------------------------------------------------------------------
+17.18 给文件添加前缀或后缀
+$ last | while read i; do [[ -n "$i" ]] && printf "%b" "$HOSTNAME\t$i\n"; done
+# Write a new logfile
+$ last | while read i; do [[ -n "$i" ]] && printf "%b" "$HOSTNAME\t$i\n"; done >
+last_$HOSTNAME.log
+或者可以用awk给每行添加文本
+$ last | awk "BEGIN { OFS=\"\t\" } ! /^\$/ { print \"$HOSTNAME\", \$0}"
+$ last | awk "BEGIN { OFS=\"\t\" } ! /^\$/ { print \"$HOSTNAME\", \$0}" \
+> last_$HOSTNAME.log
+------------------------------------------------------------------------
+17.19 添加行号
+当然可以用循环来做
+$i=0; while IFS= read -r line; do (( i++ )); echo "$i $line"; done < lines
+1 Line 1
+2 Line 2
+3 
+4 Line 4
+5 Line 5
+
+#或者用cat来做
+$ cat -n lines
+1 Line 1
+2 Line 2
+3
+4 Line 4
+5 Line 5
+6
+
+$ cat -b lines
+1 Line 1
+2 Line 2
+
+3 Line 4
+4 Line 5
+
+#再或者用nl命令来做
+$ nl lines
+1 Line 1
+2 Line 2
+3 Line 4
+4 Line 5
+
+$ nl -ba lines
+1 Line 1
+2 Line 2
+3
+4 Line 4
+5 Line 5
+6
+
+#用awk做也是可以的
+awk '{ print NR, $0 }' filename
+1 Line 1
+2 Line 2
+3 
+4 Line 4
+5 Line 5
+6
+------------------------------------------------------------------------
+17.20 产生一个随机的文件 或 写一个数列
+添加/dev/null作为参数是为了在solaris中正常运行(Linux中不需要第二个参数)
+$ awk 'END { for (i=1; i <= 5; i++) print i, "text"}' /dev/null
+1 text
+2 text
+3 text
+4 text
+5 text
+
+#bash中没有小数,所以用到awk
+awk 'BEGIN { for (i=1; i <= 5; i+=.5) print i}' /dev/null
+1
+1.5
+2
+2.5
+3
+3.5
+4
+4.5
+5
+
+# Bash 2.04+ only, integer only
+$ for ((i=1; i<=5; i++)); do echo "$i text"; done
+1 text
+2 text
+3 text
+4 text
+5 text
+
+# Bash 3.0+ only, integer or single character only
+$ printf "%s text\n" {1..5}
+1 text
+2 text
+3 text
+4 text
+5 text
+
+$ printf "%s text\n" {a..e}
+a text
+b text
+c text
+d text
+e text
+------------------------------------------------------------------------
+17.21 添加thousands-place分隔符到一个大的数字
+$ LC_NUMERIC=en_US.UTF-8 printf "%'d\n" 123456789
+123,456,789
+$ LC_NUMERIC=en_US.UTF-8 printf "%'f\n" 123456789.987
+123,456,789.987000
+以下是只依靠bash的版本
+func_commify.sh
+------------------------------------------------------------------------
+
+

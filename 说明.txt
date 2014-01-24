@@ -1,0 +1,32 @@
+To download the examples, right-mouse-click and "save link as..." (or the equivalent in your browser) on this link.
+Once you've downloaded the examples, extract them:
+  $ tar xzf bash_Cookbook_examples_2007-05-21-A.tar.gz
+or
+  $ gzip -d bash_Cookbook_examples_2007-06-12-A.tar.gz
+  $ tar xvf bash_Cookbook_examples_2007-06-12-A.tar
+Then cd into bashcb and take a look at the README:
+$ cd bashcb/
+$ cat README
+Welcome to the examples from the _bash Cookbook_.
+    http://oreilly.com/catalog/bashckbk/
+        http://examples.oreilly.com/bashckbk/
+    http://bashcookbook.com/
+
+Each sub-directory contains the important, long, or difficult-to-type
+examples from the relevant chapter.
+
+./settings, however, is special. It contains a collection of sample
+configuration files, see ./settings/README and chapter 16 for details.
+
+$ ls
+README  ch01/  ch05/  ch07/  ch11/  ch13/  ch15/  ch17/  lib/
+appd/   ch03/  ch06/  ch10/  ch12/  ch14/  ch16/  ch19/  settings/
+
+$ ls -1 ch14
+chkpath.1*
+chkpath.2*
+clean_temp*
+finding_tools*
+make_temp*
+security_template*
+validate_using_case*

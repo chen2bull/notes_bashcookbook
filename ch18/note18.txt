@@ -1,0 +1,59 @@
+------------------------------------------------------------------------
+18.1 使用pushd和popd命令快速切换目录(用dirs来查看栈中的所有目录)
+使用pushd命令（而不是cd）来切换目录。
+比如，当前目录是/tmp/tank的话，
+$pwd
+/tmp/tank
+执行pushd /home/cmj可将当前目录压入栈中，并来切换到/home/cmj。
+$push /home/cmj
+$pwd
+/home/cmj
+$dirs -v 
+0 /home/cmj
+1 /tmp/tank
+如果执行popd的话，将会进入栈中前一个目录（也就是/tmp/tank）。
+用dirs -v列出所有的目录（并附上在栈中的位置）
+
+如果$dir -v（注意，输出中，0是但前目录）
+0 /var/tmp
+1 ~/part/me/scratch
+2 /tmp
+这时候如果执行$pushd +2 将目录2和目录0的位置调换(即当前目录被设为目录2)
+------------------------------------------------------------------------
+18.2 重复上一条命令
+在命令行中输入!!
+（还不如C-p ENTER呢）
+------------------------------------------------------------------------
+18.3 输入几乎相同的命令（不推荐使用的方法）
+$ /usr/bin/somewhere/someprog -g -H -yknot -w /tmp/soforthandsoon
+Error: -H not recognized. Did you mean -A?
+$ !!:s/H/A/   		  
+#将H换成A（注意只能替换一个单词，而且也会把其它的H换掉哦）
+/usr/bin/somewhere/someprog -g -A -yknot -w /tmp/soforthandsoon
+------------------------------------------------------------------------
+18.4 输入几乎相同的命令（推荐使用）
+$ /usr/bin/somewhere/someprog -g -A -yknot -w /tmp/soforthandsoon
+...
+$ ^-g -A^-gB^
+#将“- -A” 替换成-g（可以替换多个单词）
+/usr/bin/somewhere/someprog -gB -yknot -w /tmp/soforthandsoon
+使用方法：即使只是把-gA改成-gB，
+用^-gA -yk^-gB -yk^要比^A^B^好多了（因为可以避免A匹配目录名中其它的字符）
+------------------------------------------------------------------------
+18.5 重复上条命令的参数
+$ vi /some/long/path/name/you/only/type/once
+...
+$ gcc !$	##重复上一条命令中的第二个参数
+gcc /some/long/path/name/you/only/type/once
+...
+
+$ munge /opt/my/long/path/toa/file | more
+...
+$ vi !:1	##重复上一条命令中的第一个参数
+vi /opt/my/long/path/toa/file
+------------------------------------------------------------------------
+18.6 常用，多用TAB
+------------------------------------------------------------------------
+
+
+
