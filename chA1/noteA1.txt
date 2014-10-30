@@ -1,0 +1,24 @@
+A1.bash有命令行补齐的现成脚本
+yum install bash-completion (得到一个文件)
+然后再.bashrc里加上
+
+if [ -r /etc/bash_completion ]; then
+    source /etc/bash_completion
+fi
+
+1、要理解命令补齐，先要知道compgen的用法
+chenmingjian@WIN-7T7C6P50JB1 ~ 
+$ compgen -W "aabb ab bb cc" 
+aabb 
+ab 
+bb 
+cc 
+
+chenmingjian@WIN-7T7C6P50JB1 ~ 
+$ compgen -W "aabb ab bb cc" -- "a" 
+aabb 
+ab 
+
+chenmingjian@WIN-7T7C6P50JB1 ~ 
+$ compgen -W "aabb ab bb cc" -- "aa" 
+aabb 

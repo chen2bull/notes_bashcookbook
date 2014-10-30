@@ -1,0 +1,2411 @@
+这是一个自动生成的文件,不要编辑
+================================================================
+ch01/interactive.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: interactive
+
+# $-是一个列出当前shell的所有options的字符串
+# 或者也可以case "$PS1" in #但是，$-是完美的方法
+case "$-" in
+    *i*)  # Code for interactive shell here
+        echo "interactive shell here";;
+    *)    # Code for non-interactive shell here
+	echo "non-interactive shell here";;
+esac
+================================================================
+ch03/func_choice.1.sh
+================================================================
+# cookbook filename: func_choice.1
+
+# Let the user make a choice about something and return a standardized
+# answer.  How the default is handled and what happens next is up to
+# the if/then after the choice in main
+# Called like: choice <promtp>
+# e.g.  choice "Do you want to play a game?"
+#$ Returns: global variable CHOICE
+function choice {
+
+    CHOICE=''
+    # $*代表所有的参数
+    local prompt="$*"
+    local answer
+
+    read -p "$prompt" answer
+    case "$answer" in
+        [yY1] ) CHOICE='y';;
+        [nN0] ) CHOICE='n';;
+        *     ) CHOICE="$answer";;
+    esac
+} # end of function choice
+
+choice "Do you want a game?"
+echo you choose $CHOICE================================================================
+ch03/func_choice.2.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: func_choice.2.sh
+
+#假定用户已经输入了值到变量THISPACKAGE中，
+#要求用户确认或者重新输入
+CHOICE=''
+until [ "$CHOICE" = "y" ]; do
+    printf "%b" "This package's date is $THISPACKAGE\n" >&2
+    read -p "Is that correct? [Y/,<New date>]: " CHOICE
+    if [ -z "$CHOICE" ]; then
+        CHOICE='y'
+    elif [ "$CHOICE" != "y" ]; then
+        printf "%b" "Overriding $THISPACKAGE with ${CHOICE}\n"
+        THISPACKAGE=$CHOICE
+    fi
+done
+
+# Build the package here
+================================================================
+ch03/func_choice.3.sh
+================================================================
+# cookbook filename: func_choice.3
+
+#输入自己最喜欢的颜色，或者不输入
+read -p "Enter your favorite color, if you have one: " CHOICE
+if [ -n "$CHOICE" ]; then
+    printf "%b" "You chose: $CHOICE"
+else
+    printf "%b" "You do not have a favorite color."
+fi
+================================================================
+ch03/func_choose.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: func_choose.sh
+# Let the user make a choice about something and execute code based on
+# the answer
+# 按照以下的用法(使用的例子在本文件的末端)
+# Called like: choose <default (y or n)> <prompt> <yes action> <no action>
+# e.g. choose yes 'Yes for ls,no for pwd!' ls pwd
+function choose {
+
+    local default="$1"
+    local prompt="$2"
+    local choice_yes="$3"
+    local choice_no="$4"
+    local answer
+
+    read -p "$prompt" answer
+    [ -z "$answer" ] && answer="$default"
+
+    case "$answer" in
+        [yY1] ) exec "$choice_yes"
+            # error check
+            ;;
+        [nN0] ) exec "$choice_no"
+            # error check
+            ;;
+        *     ) printf "%b" "Unexpected answer '$answer'!"  >&2 ;;
+    esac
+} # end of function choose
+
+# 按照以下的用法
+choose yes 'Yes for ls,no for pwd!' ls pwd
+# 当命令过长时，也可以用以下的方式
+# e.g. choose "y" \
+#       "Do you want to play a game?" \
+#       /usr/games/GlobalThermonucularWar \
+#       'printf "%b" "See you later Professor Falkin."' >&2
+# Returns: nothing
+
+================================================================
+ch03/here_docment01.sh
+================================================================
+#!/usr/bin/env bash
+#
+#这是一个here docment
+#
+
+#两个EOF（EOF可以换成其他字母）之间的内容作为grep命令的输入，
+#"$1"是第一个参数
+grep $1 <<EOF
+mike x.123
+joe  x.234
+sue  x.555
+pete x.818
+sara x.822
+bill x.919
+EOF================================================================
+ch03/here_docment02.sh
+================================================================
+#!/usr/bin/env bash
+#
+#这是一个here document
+#
+
+#连个EOF之间如果有$,则$1,$2...等等会认为是变量
+#grep $1 <<EOF
+#mike $123
+#joe  $234
+#sue  $555
+#pete $818
+#sara $822
+#bill $919
+#EOF
+
+#对EOF加了单引号后，here document中的$1,$2等等不再被认为是变量
+#下面两种处理，和'EOF'效果一样
+#grep $1 <<\EOF
+#grep $1 <<EO\F
+grep $1 <<'EOF'
+mike $123
+joe  $234
+sue  $555
+pete $818
+sara $822
+bill $919
+EOF================================================================
+ch03/here_docment03.sh
+================================================================
+#!/usr/bin/env bash
+#
+#这是一个here document
+#
+
+value=somethings
+#...
+
+if [ "$value" = "somethings" ];then
+#在缩进的地方用 <<- （唯一的方法）
+#不过，emacs中不能为here文档添加缩进，可在其他编辑器中添加tab
+    grep $1 <<-'EOF'
+	mike $123
+	joe  $234
+	sue  $555
+	pete $818
+	sara $822
+	bill  $919
+	EOF
+fi
+================================================================
+ch03/input_passwd.sh
+================================================================
+#!/usr/bin/env bash
+
+#不会显示输入的密码
+read -s -p "Please input the password:" PASSWD
+#换行
+printf "%b" "\n"
+
+================================================================
+ch03/select_dir.sh
+================================================================
+# cookbook filename: select_dir
+
+#Finished选项 和 根目录下的所有文件（每个文件都是一项）
+directorylist="Finished $(ls /)"
+
+#PS3的值影响select命令的输出
+PS3='Directory to process? ' # Set a useful select prompt
+
+directory = ''
+until [ "$directory" == "Finished" ]; do
+    printf "%b" "\a\n\nSelect a directory to process:\n" 
+    #在一个列表中选择一项到directory中
+    select directory in $directorylist; do
+    # 如果选择的是列表中的项，则directory为该项的值，否则directory为空
+
+        # User types a number which is stored in $REPLY, but select
+        # returns the value of the entry
+        # 如果选择 Finished ,则结束
+        if [ "$directory" = "Finished" ]; then
+            echo "Finished processing directories."
+            break
+	# 如果选择是目录中的一个
+        elif [ -n "$directory" ]; then
+            echo "You chose number $REPLY, processing $directory ..."
+            # 在这里加入对该选项进行的操作
+	    # 。。。一些代码
+            break
+        # 其他选择都是非法的
+        else
+            echo "Invalid selection!"
+        fi # end of handle user's selection
+
+    done # end of select a directory
+done # end of while not finished
+================================================================
+ch04/run_all_script.sh
+================================================================
+#!/usr/bin/env bash
+
+#用 run_all_script <脚本文件s所在的文件夹>，执行该目录下的所有文件
+function run_all_script {
+for SCRIPT in $1;do
+    # -f是文件，-a相当与and，-x 文件具有可执行权限
+    if [ -f $SCRIPT -a -x $SCRIPT ];then
+	$SCRIPT
+    fi
+done
+}
+
+================================================================
+ch05/check_arg_count.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: check_arg_count
+#
+# Check for the correct # of arguments:
+# Use this syntax or use: if [ $# -lt 3 ]
+if (( $# < 3 ))
+then
+    printf "%b" "Error. Not enough arguments.\n" >&2
+    printf "%b" "usage: myscript file1 op file2\n" >&2
+    exit 1
+elif (( $# > 3 ))
+then
+    printf "%b" "Error. Too many arguments.\n" >&2
+    printf "%b" "usage: myscript file1 op file2\n" >&2
+    exit 2
+else
+    printf "%b" "Argument count correct.  Proceeding...\n"
+fi
+================================================================
+ch05/check_unset_parms.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: check_unset_parms
+#
+USAGE="usage: myscript scratchdir sourcefile conversion"
+FILEDIR=${1:?"Error. You must supply a scratch directory."}
+FILESRC=${2:?"Error. You must supply a source file."}
+CVTTYPE=${3:?"Error. ${USAGE}"}
+================================================================
+ch05/chmod_750_all.1.sh
+================================================================
+# cookbook filename: chmod_750_all.1.sh
+# 
+# 
+# 这是一种过时的用法，不要使用这个文件，看chmod_750_all.2.sh
+# 遍历所有的命令行参数，$*就是所有的命令行参数组成的列表
+for FN in $*
+do
+    echo changing $FN
+    chmod 0750 $FN
+done
+================================================================
+ch05/chmod_750_all.2.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: chmod_750_all.2.sh
+#
+# change permissions on a bunch of files
+# with better quoting in case of filenames with blanks
+#
+# 推荐的写法！！！！
+# 注意"$@",是有双引号的
+for FN in "$@"
+do
+    #注意"$FN",是有双引号的
+    chmod 0750 "$FN"
+done
+================================================================
+ch05/embedded_documentation.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: embedded_documentation
+
+echo 'Shell script code goes here'
+
+# 多行注释
+# Use a : NOOP and here document to embed documentation,
+: <<'END_OF_DOCS'
+
+Embedded documentation such as Perl's Plan Old Documentation (POD),
+or even plain text here.
+
+Any accurate documentation is better than none at all.
+
+Sample documentation in Perl's Plain Old Documentation (POD) format adapted  from CODE/ch07/Ch07.001_Best_Ex7.1 and 7.2 in Perl Best Practices.
+
+=head1 NAME
+
+MY~PROGRAM--One line description here
+
+=head1 SYNOPSIS
+
+  MY~PROGRAM [OPTIONS] <file>
+
+=head1 OPTIONS
+
+  -h = This usage.
+  -v = Be verbose.
+  -V = Show version, copyright and license information.
+
+
+=head1 DESCRIPTION
+
+A full description of the application and its features.
+May include numerous subsections (i.e. =head2, =head3, etc.)
+
+
+[...]
+
+
+=head1 LICENSE AND COPYRIGHT
+
+=cut
+
+END_OF_DOCS
+================================================================
+ch05/suffixer.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: suffixer
+#
+# rename files that end in .bad to be .bash
+# 批量修改文件名
+
+for FN in *.bad
+do
+    if [ -f $FN ];then
+	mv "${FN}" "${FN%bad}bash" # .badfile.bad 会被替换成.badfile.bash
+	#比用${FN/.bad/.bash}要好很多(因为.badfile.bad 替换.bashfile.bad)
+    fi
+done
+================================================================
+ch05/use_up_option.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: use_up_option
+#
+# use and consume an option
+# 如果带了选项-v，则不输出被修改的文件名
+#
+# 解析-v选项
+VERBOSE=0;
+if [[ $1 = -v ]]
+then
+    VERBOSE=1;
+    # shift命令将$2 赋值为$1,将$3赋值为$2,...，然后$#的值减一
+    shift;
+fi
+#
+# the real work is here
+#
+for FN in "$@"
+do
+    if (( VERBOSE == 0 ))
+    then
+        echo changing "$FN"
+    fi
+    chmod 0750 "$FN"
+done
+================================================================
+ch06/checkfile.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: checkfile.sh
+#
+DIRPLACE=/tmp
+INFILE=/home/yucca/amazing.data
+OUTFILE=/home/yucca/more.results
+
+# -d 测试是否为目录
+if [ -d "$DIRPLACE" ]
+then
+    cd $DIRPLACE
+    # -e 测试文件是否存在
+    if [ -e "$INFILE" ]
+    then
+	# -w 测试是否可写,-x则测试是否可执行
+        if [ -w "$OUTFILE" ]
+        then
+            doscience < "$INFILE" >> "$OUTFILE"
+        else
+            echo "can not write to $OUTFILE"
+        fi
+    else
+        echo "can not read from $INFILE"
+    fi
+else
+    echo "can not cd into $DIRPLACE"
+fi
+================================================================
+ch06/checkstr.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: checkstr.sh
+#
+# if statement
+# test a string to see if it has any length
+#
+# use the command line argument
+VAR="$1"
+#
+if [ "$VAR" ]
+then
+    echo has text
+else
+    echo zero length
+fi
+#
+if [ -z "$VAR" ]
+then
+    echo zero length
+else
+    echo has text
+fi
+================================================================
+ch06/dash.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: dash
+# dash - print a line of dashes
+# options: # how many (default 72)
+#         -c X  use char X instead of dashes
+#
+function usagexit ()
+{
+    printf "usage: %s [-c X] [#]\n" $(basename $0)
+    exit 2
+} >&2
+
+#默认长度为72，默认字符为‘-’
+LEN=72
+CHAR='-'
+while (( $# > 0 ))
+do
+    case $1 in
+    [0-9]*) LEN=$1;;
+    -c) shift
+        CHAR=$1;;
+    *) usagexit;;
+    esac
+    shift
+done
+
+if (( LEN > 4096 ))
+then
+    echo "too large" >&2
+    exit 3
+fi
+
+# build the string to the exact length
+DASHES=""
+for ((i=0; i<LEN; i++))
+do
+    DASHES="${DASHES}${CHAR}"
+done
+printf "%s\n" "$DASHES"
+================================================================
+ch06/dbinit.1.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: dbinit.1
+#
+DBLIST=$(sh ./listdb | tail +2)
+select DB in $DBLIST
+do
+    echo Initializing database: $DB
+    mysql -uuser -p $DB <myinit.sql
+done
+================================================================
+ch06/dbinit.2.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: dbinit.2
+#
+DBLIST=$(sh ./listdb | tail +2)
+
+PS3="0 inits >"
+
+select DB in $DBLIST
+do
+    if [ $DB ]
+    then
+        echo Initializing database: $DB
+
+        PS3="$((i++)) inits >"
+
+        mysql -uuser -p $DB <myinit.sql
+    fi
+done
+$
+================================================================
+ch06/func_calc.sh
+================================================================
+# cookbook filename: func_calc
+
+# Trivial command line calculator
+function calc
+{
+    awk "BEGIN {print \"The answer is: \" $* }";
+}
+
+echo '$calc 2 + 3 + 4.5'
+calc 2 + 3 + 4.5
+
+echo '$calc 2 + 3 + 4'
+calc 2 + 3 + 4
+
+echo '$calc \(2 + 2 - 3\) \* 4.5'
+calc \(2 + 2 - 3\) \* 4.5
+
+echo \$calc \'\(2 + 2 - 3\) \* 4.5\'
+calc '(2 + 2 - 3) * 4.5'================================================================
+ch06/rpncalc.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: rpncalc
+#
+# simple RPN command line (integer) calculator
+#
+# takes the arguments and computes with them
+# of the form a b op
+# allow the use of x instead of *
+#
+# error check our argument counts:
+echo $#
+
+if [ \( $# -lt 3 \) -o  \( $(( $# % 2 )) -eq 0 \) ]
+then
+    # 合法的输入是 ./rpcalc.sh 3 4 '*'
+    # ./rpcalc.sh 3 4 '*' 5 + 6 -
+    echo "usage: calc number number op  [ number op ] ..."
+    # 命令行中输入 * 会自动匹配当前目录下所有的文件
+    # 所以命令行中需要输入 ’*‘ 
+    echo "use x or '*' for multiplication"
+    exit 1
+fi
+
+ANS=$(($1 ${3//x/*} $2))
+shift 3
+while [ $# -gt 0 ]
+do
+    ANS=$((ANS ${2//x/*} $1))
+    shift 2
+done
+echo $ANS
+================================================================
+ch06/strvsnum.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: strvsnum
+#
+# the old string vs. numeric comparison dilemma
+#
+VAR1=${1:-" 05 "}
+VAR2=${2:-"5"}
+
+printf "%s" "do they -eq as equal? "
+if [ "$VAR1" -eq "$VAR2" ]
+then
+    echo YES
+else
+    echo NO
+fi
+
+printf "%s" "do they = as equal? "
+if [ "$VAR1" = "$VAR2" ]
+then
+    echo YES
+else
+    echo NO
+fi
+
+================================================================
+ch06/trackmatch.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: trackmatch
+#
+for CDTRACK in *
+do
+    # 使用=~来测试一个字符串是否复合 正则表达式
+    if [[ "$CDTRACK" =~ "([[:alpha:][:blank:]]*)- ([[:digit:]]*) - (.*)$" ]]
+    then
+        echo Track ${BASH_REMATCH[2]} is ${BASH_REMATCH[3]}
+		mv "$CDTRACK" "Track${BASH_REMATCH[2]}"
+    fi
+done
+================================================================
+ch10/func_max.1.sh
+================================================================
+# cookbook filename: func_max.1
+
+#做好要做参数检查
+function max_usage() {
+    printf "usage: %s  number1 number2 \n" $1
+} >&2  #可以将整个函数的输出都重定向到一个文件
+
+# define the function:
+# 虽然可以省略 function和括号 两个中的一个。
+# 但为了可以grep和可读性，不要省略。
+function max ()
+{
+    #参数检查的代码
+    if [ $# -lt 2 ];then
+	max_usage $FUNCNAME
+	return 1
+    fi
+
+    local HIDN
+    if [ $1 -gt $2 ]
+    then
+        BIGR=$1
+	echo "$1" is bigger then "$2"
+    else
+        BIGR=$2
+	echo "$2" is bigger then "$1"
+    fi
+    HIDN=5
+}
+
+================================================================
+ch10/hard_to_kill.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: hard_to_kill
+# 这是一个很难kill的脚本
+# 
+
+
+function trapped {
+    if [ "$1" = "USR1" ]; then
+        echo "Got me with a $1 trap!"
+        exit
+    else
+        echo "Received $1 trap--neener, neener"
+    fi
+}
+
+#用trap命令指定遇到 各种信号时的行为
+#本例中，指定的行为是执行函数"trapped 信号名"
+trap "trapped ABRT" ABRT
+trap "trapped EXIT" EXIT
+trap "trapped HUP"  HUP
+trap "trapped INT"  INT
+trap "trapped KILL" KILL   # This won't actually work
+trap "trapped QUIT" QUIT
+trap "trapped TERM" TERM
+trap "trapped USR1" USR1   # 注意，这是用户定义的信号
+
+
+# Just hang out and do nothing, without introducing "third-party"
+# : behavior such as if we used 'sleep'
+# 注意死循环的条件可以是以下两个中的一个
+#while (( 1 )); do
+while [ 0 ]; do
+    :   # : is a NOOP
+    sleep 2
+done
+
+================================================================
+ch11/default_date.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: default_date
+
+# Use Noon time to prevent a script running around midnight and a clock a
+# few seconds off from causing off by one day errors.
+START_DATE=$(date -d 'last week Monday 12:00:00' '+%Y-%m-%d')
+
+while [ 1 ]; do
+    printf "%b" "The starting date is $START_DATE, is that correct? (Y/new date) "
+    read answer
+    
+    # Anything other than ENTER, "Y" or "y" is validated as a new date
+    # could use "[Yy]*" to allow the user to spell out "yes"...
+    # validate the new date format as: CCYY-MM-DD
+    case "$answer" in
+        [Yy]) break
+            ;;
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])
+            printf "%b" "Overriding $START_DATE with $answer\n"
+            START_DATE="$answer"
+            ;;
+        
+        *)   printf "%b" "Invalid date, please try again...\n"
+            ;;
+    esac
+done
+
+END_DATE=$(date -d "$START_DATE +7 days" '+%Y-%m-%d')
+
+echo "START_DATE: $START_DATE"
+echo "END_DATE:   $END_DATE"
+================================================================
+ch11/fomat_date.sh
+================================================================
+#ISO-8601格式
+SCRICT_ISO_8601='%Y-%m-%dT%H:%M:%S%z'
+
+#接近ISO-8601，但是可读性更好
+ISO_8601='%Y-%m-%d %H:%M:%S %Z'
+#同上面的格式一样，%T是%H:%M:%S 的简写
+ISO_8601_1='%Y-%m-%d %T %Z'
+
+#适合用在文件名中
+DETEFILE='%Y%m%d%H%M%S'   ================================================================
+ch12/cdscript.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: cdscript
+# cdscript - prep and burn a CD from a dir.
+# 需要有mkisofs 和 cdrecord两个命令的支持
+# usage: cdscript dir [ cddev ]
+#
+if [[ $# < 1 || $# > 2 ]]
+then
+    echo 'usage: cdscript dir [ cddev ]'
+    exit 2
+fi
+
+# set the defaults
+SRCDIR=$1
+# your device might be "ATAPI:0,0,0" or other digits
+CDDEV=${2:-"ATAPI:0,0,0"}
+ISOIMAGE=/tmp/cd$$.iso
+
+echo "building ISO image..."
+#
+# make the ISO fs image
+#
+mkisofs $ISOPTS -A "$(cat ~/.cdAnnotation)" \
+    -p "$(hostname)" -V "$(basename $SRCDIR)" \
+    -r -o "$ISOIMAGE" $SRCDIR
+STATUS=$?
+if [ $STATUS -ne 0 ]
+then
+    echo "Error. ISO image failed."
+    echo "Investigate then remove $ISOIMAGE"
+    exit $STATUS
+fi
+
+echo "ISO image built; burning to cd..."
+exit
+
+# burn the CD
+SPD=8
+OPTS="-eject -v fs=64M driveropts=burnproof"
+cdrecord $OPTS -speed=$SPD dev=${CDDEV} $ISOImage
+STATUS=$?
+if [ $STATUS -ne 0 ]
+then
+    echo "Error. CD Burn failed."
+    echo "Investigate then remove $ISOIMAGE"
+    exit $STATUS
+fi
+
+rm -f $ISOIMAGE
+echo "Done."
+================================================================
+ch12/dash.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: dash
+# dash - print a line of dashes
+# options: # how many (default 72)
+#         -c X  use char X instead of dashes
+#
+function usagexit ()
+{
+    printf "usage: %s [-c X] [#]\n" $(basename $0)
+    exit 2
+} >&2
+
+#默认长度为72，默认字符为‘-’
+LEN=72
+CHAR='-'
+while (( $# > 0 ))
+do
+    case $1 in
+    [0-9]*) LEN=$1;;
+    -c) shift
+        CHAR=$1;;
+    *) usagexit;;
+    esac
+    shift
+done
+
+if (( LEN > 4096 ))
+then
+    echo "too large" >&2
+    exit 3
+fi
+
+# build the string to the exact length
+DASHES=""
+for ((i=0; i<LEN; i++))
+do
+    DASHES="${DASHES}${CHAR}"
+done
+printf "%s\n" "$DASHES"
+================================================================
+ch12/load_mp3.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: load_mp3
+# Fill up my mp3 player with as many songs as will fit.
+# 注意！！！！: This assumes that the mp3 player is mounted on /media/mp3
+# 
+MP3_PLAYER_DIR=/media/mp3
+
+#
+# determine the size of a file,
+# 单位为块的数目
+function FILESIZE ()
+{
+   FN=${1:-/dev/null}
+   if [[ -e $FN ]]
+   then
+       # FZ=$(ls -s $FN | cut -d ' ' -f 1)
+       set -- $(ls -s "$FN")
+       FZ=$1
+   fi
+}
+
+#
+# compute the freespace on the mp3 player
+# 单位为块的数目
+function FREESPACE
+{
+   # FREE=$(df /media/mp3 | awk '/^\/dev/ {print $4}')
+   # 下面的方法效果和上一行注释相同
+
+   # 一行中如果有以空格分割的多个输出，用以下的方法更高效率
+   set -- $(df ${MP3_PLAYER_DIR} | grep '^/dev/')
+   FREE=$4
+}
+
+# subtract the (given) filesize from the (global) freespace
+# 得到剩下的空间
+function REDUCE ()
+(( FREE-=${1:-0}))
+
+#
+# main:
+#
+let SUM=0
+let COUNT=0
+export FZ
+export FREE
+FREESPACE
+find . -name '*.mp3' -print | \
+(while read PATHNM
+do
+   FILESIZE "$PATHNM"
+   #如果文件大小小于等于剩下的freespace
+   if ((FZ <= FREE))
+   then
+       echo loading $PATHNM
+       cp "$PATHNM" "${MP3_PLAYER_DIR}"
+       # $?是上一条命令的结果，为0就是正常执行
+       if (( $? == 0 ))
+       then
+	   # 别忘了let 是为了可以执行+=,++等操作
+           let SUM+=FZ
+           let COUNT++
+	   # 减少该文件的空间
+           REDUCE $FZ
+       else
+           echo "bad copy of $PATHNM to /media/mp3"
+  	   # 不知道已经拷贝了多少，所以要把它再删除
+           rm -f ${MP3_PLAYER_DIR}/$(basename "$PATHNM")
+
+           # recompute because we don't know how far it got
+           FREESPACE
+       fi
+       # any reason to go on?
+       if (( FREE <= 0 ))
+       then
+           break
+       fi
+   else
+       echo skipping $PATHNM
+   fi
+done
+printf "loaded %d songs (%d blocks)"  $COUNT $SUM
+printf " onto %s (%d blocks free)\n" "${MP3_PLAYER_DIR}" $FREE
+)
+# end of script
+================================================================
+ch12/mkalbum.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: mkalbum
+# mkalbum - make an html "album" of a pile of photo files.
+# ver. 0.2
+#
+# An album is a directory of html pages.
+# It will be created in the current directory.
+#
+# An album page is the html to display one photo, with
+# a title that is the filename of the photo, along with
+# hyperlinks to the first, previous, next, and last photos.
+#
+# ERROUT
+ERROUT()
+{
+    printf "%b" "$@"
+} >&2
+#
+# USAGE
+USAGE()
+{
+    #basename命令
+    ERROUT "usage: %s <newdir>\n" $(basename $0)
+}
+
+# EMIT(thisph, startph, prevph, nextph, lastph)
+EMIT()
+{
+  THISPH="../$1"
+  # 去掉文件后缀名的好方法（比批量replace好多了）
+  STRTPH="${2%.*}.html"
+  PREVPH="${3%.*}.html"
+  NEXTPH="${4%.*}.html"
+  LASTPH="${5%.*}.html"
+  if [ -z "$3" ]
+  then
+      PREVLINE='<TD> Prev </TD>'
+  else
+      PREVLINE='<TD> <A HREF="'$PREVPH'"> Prev </A> </TD>'
+  fi
+  if [ -z "$4" ]
+  then
+      NEXTLINE='<TD> Next </TD>'
+  else
+      NEXTLINE='<TD> <A HREF="'$NEXTPH'"> Next </A> </TD>'
+  fi
+# 这种Here-document会解析变量
+cat <<EOF
+<HTML>
+<HEAD><TITLE>$THISPH</TITLE></HEAD>
+<BODY>
+  <H2>$THISPH</H2>
+<TABLE WIDTH="25%">
+  <TR>
+  <TD> <A HREF="$STRTPH"> First </A> </TD>
+  $PREVLINE
+  $NEXTLINE
+  <TD> <A HREF="$LASTPH"> Last </A> </TD>
+  </TR>
+</TABLE>
+  <IMG SRC="$THISPH" alt="$THISPH"
+   BORDER="1" VSPACE="4" HSPACE="4"
+   WIDTH="800" HEIGHT="600"/>
+</BODY>
+</HTML>
+EOF
+}
+   
+if (( $# != 1 ))
+then
+    USAGE
+    exit -1
+fi
+ALBUM="$1"
+if [ -d "${ALBUM}" ]
+then
+    ERROUT "Directory [%s] already exists.\n" ${ALBUM}
+    USAGE
+    exit -2
+else
+    mkdir "$ALBUM"
+fi
+cd "$ALBUM"
+
+PREV=""
+FIRST=""
+#最后一个文件命名为last是因为，创建完文件以后会创建一个
+LAST="last"
+
+while read PHOTO
+do
+    # prime the pump
+    # 第一次执行then中的内容,
+    if [ -z "${CURRENT}" ]
+    then
+        CURRENT="$PHOTO"
+        FIRST="$PHOTO"
+        continue        
+        # 第一次时，不执行下面到done的代码
+    fi
+
+
+    PHILE=$(basename "${CURRENT}")
+    # EMIT(thisph, startph, prevph, nextph, lastph)
+    EMIT "$CURRENT" "$FIRST" "$PREV" "$PHOTO" "$LAST" > "${PHILE%.*}.html"
+    
+    # set up for next iteration
+    PREV="$CURRENT"
+    CURRENT="$PHOTO"
+   
+done
+   
+PHILE=$(basename ${CURRENT})
+EMIT "$CURRENT" "$FIRST" "$PREV"   ""   "$LAST" > "${PHILE%.*}.html"
+  
+# make the symlink for "last"
+ln -s "${PHILE%.*}.html" ./last.html
+
+# make a link for index.html
+ln -s "${FIRST%.*}.html" ./index.html
+
+================================================================
+ch12/oodiff.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: oodiff
+# oodiff -- diff the CONTENTS of two OpenOffice.org files
+# works only on .odt files
+#
+function usagexit ()
+{
+    echo "usage: $0 file1 file2"
+    echo "where both files must be .odt files"
+    exit $1
+} >&2
+    12
+# assure two readable arg filenames which end in .odt
+if (( $# != 2 ))
+then
+    usagexit 1
+fi
+if [[ $1 != *.odt || $2 != *.odt ]]
+then
+    usagexit 2
+fi
+if [[ ! -r $1 || ! -r $2 ]]
+then
+    usagexit 3
+fi
+    26
+BAS1=$(basename "$1" .odt)
+BAS2=$(basename "$2" .odt)
+    29
+# unzip them someplace private
+PRIV1="/tmp/${BAS1}.$$_1"
+PRIV2="/tmp/${BAS2}.$$_2"
+    33
+# make absolute
+HERE=$(pwd)
+if [[ ${1:0:1} == '/' ]]
+then
+    FULL1="${1}"
+else
+    FULL1="${HERE}/${1}"
+fi
+    42
+# make absolute
+if [[ ${2:0:1} == '/' ]]
+then
+    FULL2="${2}"
+else
+    FULL2="${HERE}/${2}"
+fi
+    50
+# mkdir scratch areas and check for failure
+# N.B. must have whitespace around the { and } and
+#      must have the trailing ; in the {} lists
+mkdir "$PRIV1" || { echo Unable to mkdir $PRIV1 ; exit 4; }
+mkdir "$PRIV2" || { echo Unable to mkdir $PRIV2 ; exit 5; }
+    56
+cd "$PRIV1"
+unzip -q "$FULL1"
+sed -e 's/>/>\
+/g' -e 's/</\
+</g' content.xml > contentwnl.xml
+    62
+cd "$PRIV2"
+unzip -q "$FULL2"
+sed -e 's/>/>\
+/g' -e 's/</\
+</g' content.xml > contentwnl.xml
+    68
+cd $HERE
+    70
+diff "${PRIV1}/contentwnl.xml" "${PRIV2}/contentwnl.xml"
+    72
+rm -rf $PRIV1 $PRIV2
+================================================================
+ch13/getopts_custom.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: getopts_custom
+#
+# using getopts - with custom error messages
+#
+aflag=
+bflag=
+# since we don't want getopts to generate error
+# messages, but want this script to issue its
+# own messages, we will put, in the option list,
+# ===the leading ':' v---here    to silence getopts!!!===
+while getopts :ab: FOUND
+do
+    case $FOUND in
+    a)    aflag=1
+          ;;
+    b)    bflag=1
+          bval="$OPTARG"
+          ;;
+    \:)   printf "argument missing from -%s option\n" $OPTARG
+          printf "Usage: %s: [-a] [-b value] args\n" $(basename $0)
+          exit 2
+          ;;
+    \?)   printf "unknown option: -%s\n" $OPTARG
+          printf "Usage: %s: [-a] [-b value] args\n" $(basename $0)
+          exit 2
+          ;;
+
+  esac >&2
+
+done
+shift $(($OPTIND - 1))
+
+if [ "$aflag" ]
+then
+    printf "Option -a specified\n"
+fi
+if [ "$bflag" ]
+then
+    printf 'Option -b "%s" specified\n' "$bval"
+fi
+printf "Remaining arguments are: %s\n" "$*"
+================================================================
+ch13/getopts_example.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: getopts_example
+#
+# using getopts
+#
+aflag=
+bflag=
+#内嵌命令getopts从命令行参数中寻找a或b选项
+#":"在"b"的后面,表示b选项需要一个参数
+#getopts会将找到的选项赋值给第二个参数(本例中为OPTION)
+while getopts 'ab:' OPTION
+do
+  case $OPTION in
+  a)    aflag=1
+        ;;
+  b)    bflag=1
+	# 如果是带参数的选项,会将选项的值赋给"$OPTARG"(固定的变量名)
+	# 在处理该选项时,保存"$OPTARG"的值即可
+        bval="$OPTARG"
+        ;;
+  # ?是通配符,表示得到其它选项
+  # $(basename $0) 是脚本名字(不带路径的)
+  ?)    printf "Usage: %s: [-a] [-b value] args\n" $(basename $0) >&2
+        exit 2
+        ;;
+  esac
+done
+# $OPTIND(固定变量名)将被设置成,未取出的命令行参数
+# 如 ./myscript -a -b alt something,上面的处理完成后,$OPTIND会被设置成4
+# 如果是 ./myscript -a something,则$OPTIND会被设置成2
+# shift [N] 用位置参数 $N+1、$N+2 ... 代替 $1、$2 ...
+shift $(($OPTIND – 1))
+
+if [ "$aflag" ]
+then
+  printf "Option -a specified\n"
+fi
+if [ "$bflag" ]
+then
+  printf 'Option -b "%s" specified\n' "$bval"
+fi
+printf "Remaining arguments are: %s\n" "$*"
+================================================================
+ch13/onebyone.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: onebyone
+#
+# 一个接一个地处理字符
+
+while read ALINE
+do
+    # ${#ALINE} 获得${ALINE}的字符个数
+    for ((i=0; i < ${#ALINE}; i++))
+    do
+	#从ALINE的第i个字母开始取,每次取1个字母
+        ACHAR=${ALINE:i:1}
+        # do something here, e.g. echo $ACHAR
+	echo $ACHAR
+    done
+done
+================================================================
+ch13/parseViaArray.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: parseViaArray
+# 功能:查出指定文件的大小
+# 
+
+# use an array to parse the ls -l output into words
+LSL=$(ls -ld $1)
+
+# 声明MYRA是一个数组
+declare -a MYRA
+MYRA=($LSL)
+
+# ${MYRA[0]}表示第一个元素
+echo the file $1 is ${MYRA[4]} bytes.================================================================
+ch13/parseViaFunc.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: parseViaFunc
+#
+# 用函数调用解析 ls -l的输出
+# an example of output from ls -l follows:
+# -rw-r--r--  1 albing users 126 2006-10-10 22:50 fnsize
+#-rwxr-xr-x 1 cmj cmj  452 10月 20 19:23 parseViaFunc.sh
+
+function lsparts ()
+{
+    PERMS=$1
+    LCOUNT=$2
+    OWNER=$3
+    GROUP=$4
+    SIZE=$5
+    CRDATE="${6} ${7}" 
+    CRTIME=$8
+    FILE=$9
+    
+}
+
+lsparts $(ls -l "$1")
+
+echo $FILE has $LCOUNT 'link(s)' and is $SIZE bytes long.
+
+echo create date: "$CRDATE"
+echo create time: "$CRTIME"
+================================================================
+ch13/parseViaRead.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: parseViaRead
+#
+# parse ls -l with a read statement
+# an example of output from ls -l follows:
+# -rw-r--r--  1 albing users 126 2006-10-10 22:50 fnsize
+
+ls -l "$1" | { read PERMS LCOUNT OWNER GROUP SIZE CRDATE CRTIME FILE ;
+               echo $FILE has $LCOUNT 'link(s)' and is $SIZE bytes long. ;
+             }
+================================================================
+ch14/chkpath.1.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: chkpath.1
+# Check your $PATH for world-writable(所有人都可以读的) or missing directories
+# 找出所有人都可以读的目录,和不存在的文件
+
+exit_code=0
+
+# 见5.18 ${name//pattern/string} 替代所有的符合正则表达是的字符串
+# 将所有的:改成空格,然后就可以用for循环了
+for dir in ${PATH//:/ }; do
+    [ -L "$dir" ] && printf "%b" "symlink, "
+    if [ ! -d "$dir" ]; then
+        printf "%b" "missing\t\t"
+          (( exit_code++ ))
+    elif [ "$(ls -lLd $dir | grep '^d.......w. ')" ]; then
+          printf "%b" "world writable\t"
+          (( exit_code++ ))
+    else
+          printf "%b" "ok\t\t"
+    fi
+    printf "%b" "$dir\n"
+done
+exit $exit_code
+================================================================
+ch14/chkpath.2.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: chkpath.2
+# Check your $PATH for world-writable or missing directories, with 'stat'
+
+exit_code=0
+
+for dir in ${PATH//:/ }; do
+    [ -L "$dir" ] && printf "%b" "symlink, "
+    if [ ! -d "$dir" ]; then
+        printf "%b" "missing\t\t\t\t"
+        (( exit_code++ ))
+    else
+        stat=$(ls -lHd $dir | awk '{print $1, $3, $4}')
+        if [ "$(echo $stat | grep '^d.......w. ')" ]; then
+            printf "%b" "world writable\t$stat "
+            (( exit_code++ ))
+        else
+            printf "%b" "ok\t\t$stat "
+        fi
+    fi
+    printf "%b" "$dir\n"
+
+done
+exit $exit_code
+================================================================
+ch14/clean_temp.sh
+================================================================
+# cookbook filename: clean_temp
+
+# Do our best to clean up temp files no matter what
+# Note $temp_dir must be set before this, and must not change!
+cleanup="rm -rf $temp_dir"
+trap "$cleanup" ABRT EXIT HUP INT QUIT
+================================================================
+ch14/finding_tools.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: finding_tools
+
+# export may or may not also be needed, depending on what you are doing
+
+# These are fairly safe bets
+_cp='/bin/cp'
+_mv='/bin/mv'
+_rm='/bin/rm'
+
+# These are a little trickier
+case $(/bin/uname) in 
+    'Linux')
+        _cut='/bin/cut'
+        _nice='/bin/nice'
+        # [...]
+    ;;
+    'SunOS')
+        _cut='/usr/bin/cut'
+        _nice='/usr/bin/nice'
+        # [...]
+    ;;
+    # [...]
+esac
+================================================================
+ch14/make_temp.sh
+================================================================
+# cookbook filename: make_temp
+
+# Make a "good enough" random temp directory
+until [ -n "$temp_dir" -a ! -d "$temp_dir" ]; do
+    temp_dir="/tmp/meaningful_prefix.${RANDOM}${RANDOM}${RANDOM}"
+done
+mkdir -p -m 0700 $temp_dir \
+  || { echo "FATAL: Failed to create temp dir '$temp_dir': $?"; exit 100 }
+
+# Make a "good enough" random temp file in the temp dir
+temp_file="$temp_dir/meaningful_prefix.${RANDOM}${RANDOM}${RANDOM}"
+touch $temp_file && chmod 0600 $temp_file \
+  || { echo "FATAL: Failed to create temp file '$temp_file': $?"; exit 101 }
+================================================================
+ch14/security_template.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: security_template
+
+# Set a sane/secure path
+PATH='/usr/local/bin:/bin:/usr/bin'
+# It's almost certainly already marked for export, but make sure
+\export PATH
+
+# Clear all aliases.  Important: leading \ inhibits alias expansion
+\unalias -a
+
+# Clear the command path hash
+hash -r
+
+# Set the hard limit to 0 to turn off core dumps
+ulimit -H -c 0 --
+
+# Set a sane/secure IFS (note this is bash & ksh93 syntax only--not portable!)
+IFS=$' \t\n'
+
+# Set a sane/secure umask variable and use it
+# Note this does not affect files already redirected on the command line
+# 002 results in 0774 perms, 077 results in 0700 perms, etc...
+UMASK=002
+umask $UMASK
+
+until [ -n "$temp_dir" -a ! -d "$temp_dir" ]; do
+    temp_dir="/tmp/meaningful_prefix.${RANDOM}${RANDOM}${RANDOM}"
+done
+mkdir -p -m 0700 $temp_dir \
+  || (echo "FATAL: Failed to create temp dir '$temp_dir': $?"; exit 100)
+
+# Do our best to clean up temp files no matter what
+# Note $temp_dir must be set before this, and must not change!
+cleanup="rm -rf $temp_dir"
+trap "$cleanup" ABRT EXIT HUP INT QUIT
+================================================================
+ch14/validate_using_case.sh
+================================================================
+# cookbook filename: validate_using_case
+
+case $raw_input in
+    *.company.com        ) # Probably a local hostname
+        ;;
+    *.jpg                ) # Probably a JPEG file
+        ;;
+    *.[jJ][pP][gG]       ) # Probably a JPEG file, case insensitive
+        ;;
+    foo | bar            ) # entered 'foo' or 'bar
+        ;;
+    [0-9][0-9][0-9]      ) # A 3 digit number
+        ;;
+    [a-z][a-z][a-z][a-z] ) # A 4 lower-case char word
+        ;;
+    *                    ) # None of the above
+        ;;
+esac
+================================================================
+ch15/command_substitution.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: command_substitution
+
+REMOTE_HOST='host.example.com'  # Required
+REMOTE_FILE='/etc/passwd'       # Required
+SSH_USER='user@'                # Optional, set to '' to not use
+#SSH_ID='-i ~/.ssh/foo.id'       # Optional, set to '' to not use
+SSH_ID=''
+
+result=$(
+    ssh $SSH_ID $SSH_USER$REMOTE_HOST \
+      "[ -r $REMOTE_FILE ] && echo 1 || echo 0"
+) || { echo "SSH command failed!" >&2; exit 1; }
+
+if [ $result = 1 ]; then
+    echo "$REMOTE_FILE present on $REMOTE_HOST"
+else
+    echo "$REMOTE_FILE not present on $REMOTE_HOST"
+fi
+================================================================
+ch15/email_sample.sh
+================================================================
+# cookbook filename: email_sample
+
+# Define some mail settings.  Use a case statement with uname or hostname
+# to tweak settings as required for your environment.
+case $HOSTNAME in
+    *.company.com     ) MAILER='mail'   ;;  # Linux and BSD
+    host1.*           ) MAILER='mailx'  ;;  # Solaris, BSD and some Linux
+    host2.*           ) MAILER='mailto' ;;  # Handy, if installed
+esac
+RECIPIENTS='recipient1@example.com recipient2@example.com'
+SUBJECT="Data from $0"
+
+#[...]
+# Create the body as a file or variable using echo, printf, or a here-document
+# Create or modify $SUBJECT and/or $RECIPIENTS as needed
+#[...]
+
+( echo $email_body ; uuencode $attachment $(basename $attachment) ) \
+  | $MAILER -s "$SUBJECT" "$RECIPIENTS"
+================================================================
+ch15/email_sample_css.sh
+================================================================
+# cookbook filename: email_sample_css
+# From Chapter 8 of Classic Shell Scripting
+
+for MAIL in /bin/mailx /usr/bin/mailx /usr/sbin/mailx /usr/ucb/mailx /bin/mail /usr/bin/mail; do
+    [ -x $MAIL ] && break
+done
+[ -x $MAIL ] || { echo 'Cannot find a mailer!' >&2; exit 1; }
+================================================================
+ch15/finding_ipas.sh
+================================================================
+# cookbook filename: finding_ipas
+
+# IPv4 Using awk, cut and head
+/sbin/ifconfig -a | awk '/(cast)/ { print $2 }' | cut -d':' -f2 | head -1
+
+# IPv4 Using Perl, just for fun
+/sbin/ifconfig -a | perl -ne 'if ( m/^\s*inet (?:addr:)?([\d.]+).*?cast/ ) { print qq($1\n); exit 0; }'
+
+
+
+# IPv6 Using awk, cut and head
+/sbin/ifconfig -a | egrep 'inet6 addr: |address: ' | cut -d':' -f2- | cut -d'/' -f1 | head -1 | tr -d ' '
+
+# IPv6 Using Perl, just for fun
+/sbin/ifconfig -a | perl -ne 'if ( m/^\s*(?:inet6)? \s*addr(?:ess)?: ([0-9A-Fa-f:]+)/ ) { print qq($1\n); exit 0; }'
+================================================================
+ch15/func_split.sh
+================================================================
+# cookbook filename: func_split
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Output fixed-size pieces of input ONLY if the limit is exceeded
+# Called like:  Split <file> <prefix> <limit option> <limit argument>
+# e.g. Split $output ${output}_ --lines 100
+# See split(1) and wc(1) for option details
+function Split {
+    local file=$1
+    local prefix=$2
+    local limit_type=$3
+    local limit_size=$4
+    local wc_option
+ 
+    # Sanity Checks
+    if [ -z "$file" ]; then
+        printf "%b" "Split: requires a file name!\n"
+        return 1
+    fi
+    if [ -z "$prefix" ]; then
+        printf "%b" "Split: requires an output file prefix!\n"
+        return 1
+    fi
+    if [ -z "$limit_type" ]; then
+        printf "%b" "Split: requires a limit option (e.g. --lines), see 'man split'!\n"
+        return 1
+    fi
+    if [ -z "$limit_size" ]; then
+        printf "%b" "Split: requires a limit size (e.g. 100), see 'man split'!\n"
+        return 1
+    fi
+ 
+    # Convert split options to wc options.  Sigh.
+    # Not all options supported by all wc/split on all systems
+    case $limit_type in
+        -b|--bytes)      wc_option='-c';;
+        -C|--line-bytes) wc_option='-L';;
+        -l|--lines)      wc_option='-l';;
+    esac
+ 
+    # If whatever limit is exceeded
+    if [ "$(wc $wc_option $file | awk '{print $1}')" -gt $limit_size ]; then
+        # actually do something
+        split --verbose $limit_type $limit_size $file $prefix
+    fi
+} # end of function Split
+================================================================
+ch16/bashrc.sh
+================================================================
+# cookbook filename: bashrc
+
+# settings/bash_profile: subshell environment settings
+# To re-read (and implement changes to this file) use:
+# source $SETTINGS/bashrc
+
+# Fail-safe.  This should be set when we're called, but if not, the
+# "not found" error messages should be pretty clear.
+# Use leading ':' to prevent this from being run as a program after
+# it is expanded.
+: ${SETTINGS:='SETTINGS_variable_not_set'}
+
+
+# DEBUGGING only--will break scp, rsync
+# echo "Sourcing $SETTINGS/bash_profile..."
+# export PS4='+xtrace $LINENO: '
+# set -x
+
+# Debugging/logging--will not break scp, rsync
+#case "$-" in
+#    *i*) echo "$(date '+%Y-%m-%d_%H:%M:%S_%Z') Interactive" \
+#              "$SETTINGS/bashrc ssh=$SSH_CONNECTION" >> ~/rc.log ;;
+#    *  ) echo "$(date '+%Y-%m-%d_%H:%M:%S_%Z') Non-interactive" \
+#              "$SETTINGS/bashrc ssh=$SSH_CONNECTION" >> ~/rc.log ;;
+#esac
+
+# In theory this is also sourced from /etc/bashrc (/etc/bash.bashrc )
+# or ~/.bashrc to apply all these settings to login shells too.  In practice
+# if these settings only work sometimes (like in subshells), verify that.
+
+# Set some more useful prompts
+# Interactive command line prompt.
+# ONLY set one of these if we really are interactive, since lots of people 
+# (even use sometimes) test to see if a shell is interactive using
+# something like:  if [ "$PS1" ]; then
+case "$-" in
+    *i*) 
+        #export PS1='\n[\u@\h t:\l l:$SHLVL h:\! j:\j v:\V]\n$PWD\$ '
+        #export PS1='\n[\u@\h:T\l:L$SHLVL:C\!:\D{%Y-%m-%d_%H:%M:%S_%Z}]\n$PWD\$ '
+        export PS1='\n[\u@\h:T\l:L$SHLVL:C\!:J\j:\D{%Y-%m-%d_%H:%M:%S_%Z}]\n$PWD\$ '
+        #export PS2='> '                              # Secondary (i.e. continued) prompt
+        #export PS3='Please make a choice: '          # Select prompt
+        export PS4='+xtrace $LINENO: '                # xtrace (debug) prompt
+    ;;
+esac
+
+# Make sure custom inputrc is handled, if we can find it, note different
+# names. Also note different order, since for this one we probably want
+# our custom settings to over-ride the system file, if present.
+for file in $SETTINGS/inputrc ~/.inputrc /etc/inputrc; do
+    [ -r "$file" ] && export INPUTRC="$file" && break # Use first found
+done
+
+# No core files by default
+# See also /etc/security/limits.conf on many Linux systems.
+ulimit -S -c 0 > /dev/null 2>&1
+
+# Don't let CTRL-D exit the shell
+set -o ignoreeof
+
+# Set various aspects of the bash history
+export HISTSIZE=5000          # Num. of commands in history stack in memory
+export HISTFILESIZE=5000      # Num. of commands in history FILE
+export HISTCONTROL=ignoreboth # bash < 3, omit dups & lines starting with space
+export HISTIGNORE='&:[ ]*'    # bash >= 3, omit dups & lines starting with space
+#export HISTTIMEFORMAT='%Y-%m-%d_%H:%M:%S_%Z=' # bash >= 3, time-stamp hist file
+shopt -s histappend           # Append rather than overwrite history on exit
+shopt -q -s cdspell           # Auto-fix minor typos in interactive use of 'cd'
+shopt -q -s checkwinsize      # Update the values of LINES and COLUMNS
+shopt -q -s cmdhist           # Make multi-line commands 1 line in history
+set -o notify   # (or set -b) # Immediate notification of bckgrnd job termintn.
+
+# Other bash settings
+export LC_COLLATE='C'         # Set traditional C sort order (e.g. UC first)
+export HOSTFILE='/etc/hosts'  # Use /etc/hosts for host name completion
+export CDPATH='~/:.:..:../..' # Similar to $PATH, but for use by 'cd'
+# Note that the '.' in $CDPATH is needed so that cd will work under POSIX mode
+# but this will also cause cd to echo the new directory to STDOUT!
+
+# Import bash completion settings, if they exist in the default location.
+# This can take a second or two on a slow system, so you may not always
+# want to do it, even if it does exist (which it doesn't by default on many
+# systems, e.g. Red Hat).
+# [ -r /etc/bash_completion ] && source /etc/bash_completion
+
+# Use a lesspipe filter, if we can find it.  This sets the $LESSOPEN variable
+# Globally replace the $PATH ':' delimiter with space for use in a list
+for path in $SETTINGS /opt/bin ~/ ${PATH//:/ }; do
+    # Use first one found of 'lesspipe.sh' (preferred) or 'lesspipe' (Debian)
+    [ -x "$path/lesspipe.sh" ] && eval $("$path/lesspipe.sh") && break
+    [ -x "$path/lesspipe" ]    && eval $("$path/lesspipe")    && break
+done
+
+# Set other less & editor prefs (overkill)
+export LESS="--LONG-PROMPT --LINE-NUMBERS --QUIET"
+export VISUAL='vi'  # Set a default that should always work
+# We'd rather use 'type -P' here, but that was added in bash-2.05b and we use
+# systems we don't control with versions older than that.  We can't easily
+# use 'which' since that produces output whether the file is found or not.
+for path in ${PATH//:/ }; do
+    # Overwrite VISUAL if we can find nano
+    [ -x "$path/nano" ] \
+      && export VISUAL='nano --smooth --const --nowrap --suspend' && break
+done
+# See above notes re: nano for why we're using this for loop
+for path in ${PATH//:/ }; do
+    # Alias vi to vim in binary mode if we can
+    [ -x "$path/vim" ] && alias vi='vim -b' && break
+done
+export EDITOR="$VISUAL"      # Yet Another Possibility
+export SVN_EDITOR="$VISUAL"  # Subversion
+alias edit=$VISUAL           # Provide a command to use on all systems
+
+# Set ls options and aliases
+# Note all the colorizing may or may not work depending on your terminal
+# emulation and settings, esp. ANSI color. But it shouldn't hurt to have.
+# See above notes re: nano for why we're using this for loop
+for path in ${PATH//:/ }; do
+    [ -r "$path/dircolors" ] && eval "$(dircolors)" \
+      && LS_OPTIONS='--color=auto' && break
+done
+export LS_OPTIONS="$LS_OPTIONS -F -h"
+# Using dircolors may cause csh scripts to fail with an
+# "Unknown colorls variable `do'." error.  The culprit is the ":do=01;35:"
+# part in the LS_COLORS environment variable.  For a possible solution see
+# http://forums.macosxhints.com/showthread.php?t=7287
+# eval "$(dircolors)"
+alias ls="ls $LS_OPTIONS"
+alias ll="ls $LS_OPTIONS -l"
+alias ll.="ls $LS_OPTIONS -ld"  # Usage: ll. ~/.*
+alias la="ls $LS_OPTIONS -la"
+
+# Useful aliases
+alias bot='cd $(dirname $(find . | tail -1))'
+alias clr='cd ~/ && clear'   # Clear and return $HOME
+alias cls='clear'            # DOS-ish for clear
+alias copy='cp'              # DOS-ish for cp
+#alias cp='cp -i'            # Annoying Red Hat default from /root/.bashrc
+alias cvsst='cvs -qn update' # Hack to get concise CVS status (like svn st)
+alias del='rm'               # DOS-ish for rm
+alias diff='diff -u'         # Make unified diffs the default
+alias jdiff="diff --side-by-side --ignore-case --ignore-blank-lines\
+ --ignore-all-space --suppress-common-lines" # Useful GNU diff command
+alias dir='ls'               # DOS-ish for ls
+alias hr='history -a && history -n' # Append current, then re-read history
+alias ipconfig='ifconfig'    # Windows-ish for ifconfig
+alias md='mkdir'             # DOS-ish for mkdir
+alias move='mv'              # DOS-ish for mv
+#alias mv='mv -i'            # Annoying Red Hat default from /root/.bashrc
+alias ntsysv='rcconf'        # Debian rcconf is pretty close to Red Hat ntsysv
+alias pathping='mtr'         # mtr - a network diagnostic tool
+alias r='fc -s'              # Recall and execute 'command' starting with...
+alias rd='rmdir'             # DOS-ish for rmdir
+alias ren='mv'               # DOS-ish for mv/rename
+#alias rm='rm -i'            # Annoying Red Hat default from /root/.bashrc
+alias svnpropfix='svn propset svn:keywords "Id URL"'
+alias tracert='traceroute'   # DOS-ish for traceroute
+alias vzip='unzip -lvM'      # View contents of ZIP file
+alias wgetdir="wget --non-verbose --recursive --no-parent --no-directories\
+ --level=1"                  # Grab a whole directory using wget
+alias zonex='host -l'        # Extract (dump) DNS zone
+
+# if the script exists and is executable, create an alias to get
+# web server headers
+for path in ${PATH//:/ }; do 
+    [ -x "$path/lwp-request" ] && alias httpdinfo='lwp-request -eUd' && break
+done
+
+# Try to use kbdrate to make the keyboard go faster, but don't complain if
+# it's not there.  Easier/faster to throw out error if it's not there...
+kbdrate -r 30.0 -d 250 &> /dev/null
+
+
+# Useful functions
+
+# mkdir newdir then cd into it
+# usage: mcd (<mode>) <dir>
+function mcd {
+    local newdir='_mcd_command_failed_'
+    if [ -d "$1" ]; then         # Dir exists, mention that...
+        echo $1 exists...
+    else
+        if [ -n "$2" ]; then     # We've specified a mode
+            command mkdir -p -m $1 "$2" && newdir="$2"
+        else                     # Plain old mkdir
+            command mkdir -p "$1" && newdir="$1"
+        fi
+    fi
+    builtin cd "$newdir"         # No matter what, cd into it
+} # end of mcd
+
+
+# Trivial command line calculator
+function calc {
+    # INTEGER ONLY! --> echo The answer is: $(( $* ))
+    # Floating point
+    awk "BEGIN {print \"The answer is: \" $* }";
+} # end of calc
+
+
+# Allow use of 'cd ...' to cd up 2 levels, 'cd ....' up 3, etc. (like 4NT/4DOS)
+# Usage: cd ..., etc.
+function cd {
+
+    local option= length= count= cdpath= i= # Local scope and start clean
+
+    # If we have a -L or -P sym link option, save then remove it
+    if [ "$1" = "-P" -o "$1" = "-L" ]; then
+        option="$1"
+        shift
+    fi
+
+    # Are we using the special syntax?  Make sure $1 isn't empty, then
+    # match the first 3 characters of $1 to see if they are '...' then
+    # make sure there isn't a slash by trying a substitution; if it fails,
+    # there's no slash.  Both of these string routines require Bash 2.0+
+    if [ -n "$1" -a "${1:0:3}" = '...' -a "$1" = "${1%/*}" ]; then
+        # We are using special syntax
+        length=${#1}  # Assume that $1 has nothing but dots and count them
+        count=2       # 'cd ..' still means up one level, so ignore first two
+
+        # While we haven't run out of dots, keep cd'ing up 1 level
+        for ((i=$count;i<=$length;i++)); do
+            cdpath="${cdpath}../" # Build the cd path
+        done
+
+        # Actually do the cd
+        builtin cd $option "$cdpath"
+    elif [ -n "$1" ]; then
+        # We are NOT using special syntax; just plain old cd by itself
+        builtin cd $option "$*"
+    else
+        # We are NOT using special syntax; plain old cd by itself to home dir
+        builtin cd $option
+    fi
+} # end of cd
+
+
+# Do site or host specific things here
+case $HOSTNAME in
+    *.company.com     ) # source $SETTINGS/company.com
+                      ;;
+    host1.*           ) # host1 stuff
+                      ;;
+    host2.company.com ) # source .bashrc.host2
+                      ;;
+    drake.*           ) # echo DRAKE in bashrc.jp!
+                        export TAPE=/dev/tape
+                      ;;
+esac
+================================================================
+ch16/func_mcd.sh
+================================================================
+# cookbook filename: func_mcd
+
+# mkdir newdir then cd into it
+# usage: mcd (<mode>) <dir>
+function mcd {
+    local newdir='_mcd_command_failed_'
+    if [ -d "$1" ]; then         # Dir exists, mention that...
+        echo "$1 exists..."
+        newdir="$1"
+    else
+        if [ -n "$2" ]; then     # We've specified a mode
+            command mkdir -p -m $1 "$2" && newdir="$2"
+        else                     # Plain old mkdir
+            command mkdir -p "$1" && newdir="$1"
+        fi
+    fi
+    builtin cd "$newdir"         # No matter what, cd into it
+} # end of mcd
+================================================================
+ch16/func_tweak_path.sh
+================================================================
+# cookbook filename: func_tweak_path
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Add a directory to the beginning or end of your path as long as it's not
+# already present.  Does not take into account symbolic links!
+# Returns:  1 or sets the new $PATH
+# Called like:  add_to_path <directory> (pre|post)
+function add_to_path {
+    local location=$1
+    local directory=$2
+
+    # Make sure we have something to work with
+    if [ -z "$location" -o  -z "$directory" ]; then
+        echo "$0:$FUNCNAME: requires a location and a directory to add" >&2
+        echo "e.g. add_to_path pre /bin" >&2
+        return 1
+    fi
+
+    # Make sure the directory is not relative
+    if [ $(echo $directory | grep '^/') ]; then
+        : echo "$0:$FUNCNAME: '$directory' is absolute" >&2
+    else
+        echo "$0:$FUNCNAME: can't add relative directory '$directory' to the \$PATH" >&2
+        return 1
+    fi
+
+    # Make sure the directory to add actually exists
+    if [ -d "$directory" ]; then
+        : echo "$0:$FUNCNAME: directory exists" >&2
+    else
+        echo "$0:$FUNCNAME: '$directory' does not exist--aborting" >&2
+        return 1
+    fi
+
+    # Make sure it's not already in the PATH
+    if [ $(contains "$PATH" "$directory") ]; then
+        echo "$0:$FUNCNAME: '$directory' already in \$PATH--aborting" >&2
+    else
+        : echo "$0:$FUNCNAME: adding directory to \$PATH" >&2
+    fi
+
+    # Figure out what to do
+    case $location in
+        pre*  ) PATH="$directory:$PATH" ;;
+        post* ) PATH="$PATH:$directory" ;;
+        *     ) PATH="$PATH:$directory" ;;
+    esac
+
+    # Clean up the new path, then set it
+    PATH=$(clean_path $PATH)
+
+} # end of function add_to_path
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Remove a directory from your path, if present.
+# Returns:  sets the new $PATH
+# Called like:  rm_from_path <directory>
+function rm_from_path {
+    local directory=$1
+
+    # Remove all instances of $directory from $PATH
+    PATH=${PATH//$directory/}
+
+    # Clean up the new path, then set it
+    PATH=$(clean_path $PATH)
+
+} # end of function rm_from_path
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Remove leading/trailing or duplicate ':', remove duplicate entries
+# Returns:  echos the "cleaned up" path
+# Called like:  cleaned_path=$(clean_path $PATH)
+function clean_path {
+    local path=$1
+    local newpath
+    local directory
+
+    # Make sure we have something to work with
+    [ -z "$path" ] && return 1
+
+    # Remove duplicate directories, if any
+    for directory in ${path//:/ }; do
+        contains "$newpath" "$directory" && newpath="${newpath}:${directory}"
+    done
+
+    # Remove any leading ':' separators
+    # Remove any trailing ':' separators
+    # Remove any duplicate ':' separators
+    newpath=$(echo $newpath | sed 's/^:*//; s/:*$//; s/::/:/g')
+
+    # Return the new path
+    echo $newpath
+
+} # end of function clean_path
+
+
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Determine if the path contains a given directory
+# Return 1 if target is contained within pattern, 0 otherwise
+# Called like:  contains $PATH $dir
+function contains {
+    local pattern=":$1:"
+    local target=$2
+
+    # This will be a case-sensitive comparison unless nocasematch is set
+    case $pattern in
+        *:$target:* ) return 1;;
+        *           ) return 0;;
+    esac
+} # end of function contains
+
+# test the script
+echo "before:add_to_path post /home/cmj/ "
+echo $PATH
+add_to_path post /home/cmj/
+echo "after:add_to_path post /home/cmj/ "
+echo $PATH
+
+echo "before:rm_from_path post /home/cmj/"
+echo $PATH
+rm_from_path /home/cmj/
+echo "after:add_to_path post /home/cmj/ "
+echo $PATH
+
+================================================================
+ch16/prompts.sh
+================================================================
+# cookbook filename: prompts
+
+# User name @ short hostname, the date and time and the current working
+# directory (CWD):
+# 如：[cmj@PC 三 10月 23 23:15] ~/a_files/ $
+# 10月23日，星期三  # 其中PC是电脑名
+export PS1='[\u@\h \d \A] \w \$ '
+
+
+# User name @ long hostname, the date and time in ISO 8601 format and the
+# basename of the current working directory (\W):
+# 如,[cmj@PC 2013-10-23 23:17:35+0800] ch16 $
+export PS1='[\u@\H \D{%Y-%m-%d %H:%M:%S%z}] \W \$ '
+
+
+# User name @ short hostname, bash version, and the current working
+# directory (\w):
+# 如：[cmj@PC 4.2.25 ~/a_files/aa.coding/sa-bash/bashcookbook/ch16
+# 其中PC是电脑名,4.2.25是bash的版本
+export PS1='[\u@\h \V \w] \$ '
+
+
+# New line, user name @ hostname, base PTY, shell level, history number, new
+# line, and full working directory name ($PWD).
+# 如：0是base PTY，1是shell level，576 是 history number，该提示符有换行
+# [cmj@PC 0:1:576]
+# /home/cmj/a_files/aa.coding/sa-bash/bashcookbook/ch16
+export PS1='\n[\u@\h \l:$SHLVL:\!]\n$PWD\$ '
+
+
+# User name @ short hostname, the exit status of the last command and the
+# current working directory.
+# 如下：0是上一条命令的返回值
+# [cmj@PC 0 ~/a_files/aa.coding/sa-bash/bashcookbook/ch16
+export PS1='[\u@\h $? \w \$ '
+
+
+# Number of jobs in the background
+# [cmj@PC jobs:0]
+# /home/cmj/a_files/aa.coding/sa-bash/bashcookbook/ch16$
+export PS1='\n[\u@\h jobs:\j]\n$PWD\$ '
+
+
+# User, short hostname, tty, level, history, jobs, version and full
+# working directory name:
+# [cmj@PC t:0 l:1 h:596 j:0 v:4.2.25]
+# /home/cmj/a_files/aa.coding/sa-bash/bashcookbook/ch16
+export PS1='\n[\u@\h t:\l l:$SHLVL h:\! j:\j v:\V]\n$PWD\$ '
+
+
+# user@host, T for ptty, L for shell level, C for command number, and the
+# date and time in ISO 8601.
+# [cmj@PC:T0:L1:C598:2013-10-23_23:28:46_CST]
+# /home/cmj/a_files/aa.coding/sa-bash/bashcookbook/ch16
+export PS1='\n[\u@\h:T\l:L$SHLVL:C\!:\D{%Y-%m-%d_%H:%M:%S_%Z}]\n$PWD\$ '
+
+
+# User name @ short hostname, and the current working directory in light
+# blue:
+# 蓝色的如下字符
+# [cmj@PC:~/a_files/aa.coding/sa-bash/bashcookbook/ch16]$ 
+export PS1='\[\033[1;34m\][\u@\h:\w]\$\[\033[0m\] '
+
+
+# User name @ short hostname, and the current working directory in both the
+# xterm title bar and in the prompt itself.
+# 将Promt和终端窗口的标题都设成
+# [cmj@PC:~/a_files/aa.coding/sa-bash/bashcookbook/ch16]$ 
+export PS1='\[\033]0;\u@\h:\w\007\][\u@\h:\w]\$ '
+
+
+# Both color and xterm updates:
+export PS1='\[\033]0;\u@\h:\w\007\]\[\033[1;34m\][\u@\h:\w]\$\[\033[0m\] '
+================================================================
+ch17/archive_meta-data.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: archive_meta-data
+
+printf "%b" "Mode\tUser\tGroup\tBytes\tModified\tFileSpec\n" > archive_file
+find / \( -path /proc -o -path /mnt -o -path /tmp -o -path /var/tmp \
+  -o -path /var/cache -o -path /var/spool \) -prune \
+  -o -type d -printf 'd%m\t%u\t%g\t%s\t%t\t%p/\n' \
+  -o -type l -printf 'l%m\t%u\t%g\t%s\t%t\t%p -> %l\n' \
+  -o         -printf  '%m\t%u\t%g\t%s\t%t\t%p\n' \) >> archive_file
+================================================================
+ch17/func_commify.sh
+================================================================
+# cookbook filename: func_commify
+
+function commify {
+    typeset text=${1}
+
+    typeset bdot=${text%%.*}
+    typeset adot=${text#${bdot}}
+
+    typeset i commified
+    (( i = ${#bdot} - 1 ))
+
+    while (( i>=3 )) && [[ ${bdot:i-3:1} == [0-9] ]]; do
+        commified=",${bdot:i-2:3}${commified}"
+        (( i -= 3 ))
+    done
+    echo "${bdot:0:i+1}${commified}${adot}"
+}
+================================================================
+ch17/func_shift_by.sh
+================================================================
+# cookbook filename: func_shift_by
+
+# Pop a given number of items from the top of a stack,
+# such that you can then perform an action on whatever is left.
+# Called like:  shift_by <# to keep> <ls command, or whatever>
+# Returns:  the remainder of the stack or list
+#
+# For example, list some objects, then keep only the top 10.
+#
+# It is CRITICAL that you pass the items in order with the objects to
+# be removed at the top (or front) of the list, since all this function
+# does is remove (pop) the number of entries you specify from the top
+# of the list.
+#
+# You should experiment with echo before using rm!
+#
+# For example:
+#      rm -rf $(shift_by $MAX_BUILD_DIRS_TO_KEEP $(ls -rd backup.2006*))
+#
+function shift_by {
+
+    # Remove the given number of objects (plus 1) from the list.
+    shift $(( $1+1 ))
+
+    # Return whatever is left
+    echo "$*"
+}
+================================================================
+ch17/is_process_running.sh
+================================================================
+# cookbook filename: is_process_running
+
+# Can you believe this?!?
+case `uname` in
+    Linux|AIX) PS_ARGS='-ewwo pid,args'   ;;
+    SunOS)     PS_ARGS='-eo pid,args'     ;;
+    *BSD)      PS_ARGS='axwwo pid,args'   ;;
+    Darwin)    PS_ARGS='Awwo pid,command' ;;
+esac
+
+if ps $PS_ARGS | grep -q 'bin/[s]shd'; then
+    echo 'sshd is running'
+else
+    echo 'sshd not running'
+fi
+================================================================
+ch19/buggy.sh
+================================================================
+#!/usr/bin/env bash
+# cookbook filename: buggy
+#
+
+set -x
+
+result=$1
+
+[ $result = 1 ] \
+  && { echo "Result is 1; excellent."  ; exit 0;   } \
+  || { echo "Uh-oh, ummm, RUN AWAY! "  ; exit 120; }
+
+
+================================================================
+ch19/first.sh
+================================================================
+#!/usr/bin/env bash
+#
+# a simple example of a common mistake
+#
+# set the value:
+echo "=================="
+echo "in first.sh"
+export VAL=5
+printf "VAL=%d\n" $VAL
+# invoke our other script:
+echo "=================="
+
+#这种方法不能在另一个脚本中改变一个已经export的值
+./second.sh
+
+#但这种可以
+#source ./second.sh
+
+#这种也可以（但要echo 结果，并将second.sh中所有的输出重定向到 >&2 ）
+# VAL=$(./second.sh)
+
+#但不推荐以上三种方法，应该写成函数更合理
+
+echo "=================="
+echo "back to first.sh"
+printf "VAL=%d\n" $VAL================================================================
+ch19/goof1.sh
+================================================================
+#!/bin/bash -
+# common goof:
+# X=$Y $Z
+# isn't the same as
+# X="$Y $Z"
+#
+OPT1=-l
+OPT2=-h
+#这样不能正常执行ls -l -h .
+#ALLOPT=$OPT1 $OPT2
+
+#这样才能正常执行
+ALLOPT="$OPT1 $OPT2"
+ls $ALLOPT .================================================================
+ch19/oddscript.sh
+================================================================
+#!/usr/bin/env bash
+
+#good nodes: 0
+#bad nodes: 6
+#miss nodes: 0
+#GOOD=6 BAD=0 MISS=0
+
+badnode=6
+
+printf "good nodes: %d\n" $goodnode
+printf "bad nodes: %d\n" $badnode
+printf "miss nodes: %d\n" $missnode
+#下面语句将输出GOOD=6 BAD=0 MISS=0
+printf "GOOD=%d BAD=%d MISS=%d\n" $goodnode $badnode $missnode
+
+#下面的语句才能正确地运行
+#printf "GOOD=%d BAD=%d MISS=%d\n" "$goodnode" "$badnode" "$missnode"
+
+================================================================
+ch19/second.sh
+================================================================
+#!/usr/bin/env bash
+
+printf "%b" "in second\n"
+printf "initially VAL=%d\n" $VAL
+VAL=12
+printf "changed so VAL=%d\n" $VAL
+================================================================
+chA1/build_comp_index.sh
+================================================================
+#!/usr/bin/env bash
+
+# set -x
+
+if [ "$#" -eq 0 ]; then
+    eval "$0" config
+    eval "$0" beam
+    exit 0
+fi
+
+if [ "$1" = "config" ] ; then
+    echo "正在更新配置索引"
+    SRC_DIR="/data/mge/config/"
+    DST_FILE="/root/.m15comp_config.index"
+    SUFFIX=".config"
+elif [ "$1" = "beam" ]; then
+    echo "正在更新代码索引"
+    SRC_DIR="/data/mge/src/"
+    DST_FILE="/root/.m15comp_erl.index"
+    SUFFIX=".erl"
+fi
+
+PATTERN="*"${SUFFIX}
+
+ALL_F=$(find "${SRC_DIR}" -name "${PATTERN}" | xargs -i basename {})
+
+ALL_F_NO_SUFF=$(for FN in ${ALL_F}; do
+    echo ${FN%${SUFFIX}}
+done)
+
+echo "$ALL_F_NO_SUFF" > ${DST_FILE}
+echo "更新成功"
+
+
+================================================================
+chA1/complete_cc.sh
+================================================================
+#!/usr/bin/env bash
+
+## cc的作用是热更指定的配置模块哦
+
+function __parser_cc() {
+    local curarg=${COMP_WORDS[COMP_CWORD]}
+    local ARGLEN=$(expr length "${curarg}")
+    
+    # 防止输出过多,在输入字符个数大于2的时候才出发
+    if [ ${ARGLEN} -ge 2 ]; then
+        local options=$(cat "/root/.m15comp_config.index")
+        COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+    fi
+}
+
+complete -F __parser_cc cc
+================================================================
+chA1/complete_cl.sh
+================================================================
+#!/usr/bin/env bash
+
+## cc的作用是热更指定的配置模块哦
+
+function __parser_cl() {
+    local curarg=${COMP_WORDS[COMP_CWORD]}
+    local ARGLEN=$(expr length "${curarg}")
+
+    # 防止输出过多,在输入字符个数大于2的时候才出发
+    if [ ${ARGLEN} -ge 2 ]; then
+        local options=$(cat "/root/.m15comp_erl.index")
+        COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+    fi
+}
+
+complete -F __parser_cl cl================================================================
+chA1/complete_mgectl.sh
+================================================================
+#!/usr/bin/env bash
+
+# 这是一个路由函数,根据参数的不同路由到不同的函数
+function __parser_mgectl_HUB() {
+    #$COMP_CWORD是系统自动变量，表示当前命令单词索引。 0是第一个单词(也就是mgectl)的索引号，。 
+    case $COMP_CWORD in
+        0)#仍在完成根命令，这里不需要处理 
+        ;;
+        1)  #根命令已经完成，这里开始补充一级主命令
+            #${COMP_WORDS[0]}是根命令，在这个例子中就是mgectl
+            eval __parser_mgectl_$(basename ${COMP_WORDS[0]})
+        ;;  
+        2|*)  #一级主命令已经完成，这里开始补充一级主命令的选项
+            #${COMP_WORDS[1]}是一级主命令，在这个例子中就是stop、debug或者manager
+            case "${COMP_WORDS[$COMP_CWORD - 1]}" in
+                stop|debug|manager|hot_update)
+                    eval __parser_mgectl_${COMP_WORDS[$COMP_CWORD - 1]};;
+                *)
+                    : ;;
+            esac
+#        *)
+#            :   #空指令
+#        ;;
+    esac
+}
+
+function __parser_mgectl_mgectl() {
+    local curarg=${COMP_WORDS[COMP_CWORD]} 
+    local options="start stop empty live manager debug"
+    COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+}
+
+function __parser_mgectl_stop() {
+    COMPREPLY="gateway"
+}
+function __parser_mgectl_debug() {
+    local curarg=${COMP_WORDS[COMP_CWORD]}
+    local options="cmj abc ztf wja xcf flq wyy wlpy"
+    local len=$(expr length "${curarg}")
+    if [ $len -eq 0 ]; then
+        curarg="xxx"
+    fi
+    COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+}
+
+function __parser_mgectl_manager() {
+    local curarg=${COMP_WORDS[COMP_CWORD]} 
+    local options="hot_update reload_config"
+    COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+}
+
+function __parser_mgectl_hot_update() {
+    local curarg=${COMP_WORDS[COMP_CWORD]}
+    local ARGLEN=$(expr length "${curarg}")
+
+    # 防止输出过多,在输入字符个数大于2的时候才出发
+    if [ ${ARGLEN} -ge 2 ]; then
+        local options=$(cat "/root/.m15comp_erl.index")
+        COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+    fi
+}
+
+function __parser_mgectl_reload_config() {
+    local curarg=${COMP_WORDS[COMP_CWORD]}
+    local ARGLEN=$(expr length "${curarg}")
+
+    # 防止输出过多,在输入字符个数大于2的时候才出发
+    if [ ${ARGLEN} -ge 2 ]; then
+        local options=$(cat "/root/.m15comp_config.index")
+        COMPREPLY=( $(compgen -W "${options}" -- "${curarg}") )
+    fi
+}
+complete -F __parser_mgectl_HUB mgectl
+
+
+# ./mgectl start
+# ./mgectl stop
+# ./mgectl stop gateway
+# ./mgectl live
+# ./mgectl empty
+# ./mgectl debug cmj
+# ./mgectl debug xxx
+# ./mgectl debug abc
+# ./mgectl manager hot_update
+# ./mgectl manager reload_config
+================================================================
+chA1/effect_comp.sh
+================================================================
+#!/usr/bin/env bash
+
+if [ -d /data/mge/script/completion ]; then
+    __FILE_LS=$(find /data/mge/script/completion -name "complete*.sh")
+    for __FILE in ${__FILE_LS}; do
+        source "$__FILE"
+    done
+
+fi
+alias bindex='/data/mge/script/completion/build_comp_index.sh'
+__FILE_LS=$(find /root/ -name .m15comp*.index -cmin +30)
+__FILE_LEN=$(expr length "${__FILE_LS}")
+if [ ${__FILE_LEN} -ne 0 ]; then
+    bindex
+fi
