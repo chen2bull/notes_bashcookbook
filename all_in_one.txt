@@ -1462,15 +1462,15 @@ etc.)
 bashæœ¬èº«åªåœ¨ =~ ä¸­ä½¿ç”¨
 ------------------------------------------------------------------------
 ========================================================
-A1.bashÓĞÃüÁîĞĞ²¹ÆëµÄÏÖ³É½Å±¾
-yum install bash-completion (µÃµ½Ò»¸öÎÄ¼ş)
-È»ºóÔÙ.bashrcÀï¼ÓÉÏ
+A1.bashæœ‰å‘½ä»¤è¡Œè¡¥é½çš„ç°æˆè„šæœ¬
+yum install bash-completion (å¾—åˆ°ä¸€ä¸ªæ–‡ä»¶)
+ç„¶åå†.bashrcé‡ŒåŠ ä¸Š
 
 if [ -r /etc/bash_completion ]; then
     source /etc/bash_completion
 fi
 
-1¡¢ÒªÀí½âÃüÁî²¹Æë£¬ÏÈÒªÖªµÀcompgenµÄÓÃ·¨
+1ã€è¦ç†è§£å‘½ä»¤è¡¥é½ï¼Œå…ˆè¦çŸ¥é“compgençš„ç”¨æ³•
 chenmingjian@WIN-7T7C6P50JB1 ~ 
 $ compgen -W "aabb ab bb cc" 
 aabb 
