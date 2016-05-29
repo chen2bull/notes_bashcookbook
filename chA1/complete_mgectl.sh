@@ -73,6 +73,13 @@ function __parser_mgectl_reload_config() {
 complete -F __parser_mgectl_HUB mgectl
 
 
+# 如果想要提示文件名,可以用以下的方式
+#    case "${prev}" in
+#        -f|--file)
+#            COMPREPLY=( $(compgen -o filenames -W "`ls *.sh`" -- ${cur}) )
+#            ;;
+#    esac
+
 # ./mgectl start
 # ./mgectl stop
 # ./mgectl stop gateway
